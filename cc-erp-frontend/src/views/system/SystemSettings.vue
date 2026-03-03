@@ -25,6 +25,12 @@
             <el-form-item label="公司名称">
               <el-input v-model="basicSettings.companyName" placeholder="请输入公司名称" />
             </el-form-item>
+            <el-form-item label="联系电话">
+              <el-input v-model="basicSettings.contactPhone" placeholder="请输入联系电话" />
+            </el-form-item>
+            <el-form-item label="联系地址">
+              <el-input v-model="basicSettings.contactAddress" placeholder="请输入联系地址" />
+            </el-form-item>
             <el-form-item label="系统版本">
               <el-input v-model="basicSettings.version" placeholder="1.0.0" disabled />
             </el-form-item>
@@ -160,10 +166,34 @@ const basicSettings = reactive({
   systemName: 'CC ERP 企业管理系统',
   systemShortName: 'CC ERP',
   companyName: '',
+  contactPhone: '',
+  contactAddress: '',
   version: '1.0.0'
 })
 
-// 安全设置
+// 从 localStorage 加载基本设置
+const loadBasicSettings = () => {
+  try {
+    const saved = localStorage.getItem('cc_erp_system_settings')
+    if (saved) {
+      const data = JSON.parse(saved)
+      Object.assign(basicSettings, data)
+    }
+  } catch (e) {
+    console.error('加载基本设置失败:', e)
+  }
+}
+
+// 保存基本设置到 localStorage
+const handleSaveBasic = () => {
+  try {
+    localStorage.setItem('cc_erp_system_settings', JSON.stringify(basicSettings))
+    ElMessage.success('基本设置保存成功')
+  } catch (e) {
+    console.error('保存基本设置失败:', e)
+    ElMessage.error('保存失败')
+  }
+}
 const securitySettings = reactive({
   minPasswordLength: 6,
   passwordExpireDays: 90,
@@ -192,12 +222,6 @@ const logPagination = reactive({
   size: 10,
   total: 3
 })
-
-// 保存基本设置
-const handleSaveBasic = () => {
-  ElMessage.success('基本设置保存成功')
-  // TODO: 调用接口保存设置
-}
 
 // 保存安全设置
 const handleSaveSecurity = () => {
@@ -236,6 +260,7 @@ const handleLogSizeChange = (size) => {
 
 onMounted(() => {
   // 初始化加载数据
+  loadBasicSettings()
 })
 </script>
 

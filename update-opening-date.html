@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>更新开账日期</title>
+</head>
+<body>
+  <h1>更新开账日期</h1>
+  <p>正在更新开账日期从 2026-03-26 改为 2026-02-26...</p>
+  <script>
+    // 读取当前的期初开账数据
+    const data = JSON.parse(localStorage.getItem('cc_erp_initial_balance') || '{}');
+    console.log('更新前的数据:', data);
+
+    // 更新开账日期
+    if (data.openingDate) {
+      data.openingDate = '2026-02-26';
+      localStorage.setItem('cc_erp_initial_balance', JSON.stringify(data));
+      console.log('更新后的数据:', data);
+      document.body.innerHTML += '<p style="color: green; font-size: 20px;">✅ 更新成功！开账日期已改为：2026-02-26</p>';
+      document.body.innerHTML += '<p>请关闭此窗口，然后刷新 ERP 系统页面查看更新。</p>';
+    } else {
+      document.body.innerHTML += '<p style="color: red;">❌ 未找到开账数据，请先在系统中进行期初开账操作。</p>';
+    }
+  </script>
+</body>
+</html>

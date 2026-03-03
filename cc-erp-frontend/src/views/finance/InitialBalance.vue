@@ -479,11 +479,28 @@
     <!-- 确认开账对话框 -->
     <el-dialog
       v-model="openingDialogVisible"
-      title="确认开账"
+      :title="isNextYearOpening ? `${nextYearOpeningData?.year}年度开账` : '确认开账'"
       width="500px"
       :close-on-click-modal="false"
     >
+      <!-- 次年度开账提示 -->
       <el-alert
+        v-if="isNextYearOpening"
+        title="次年度开账"
+        type="info"
+        :closable="false"
+        style="margin-bottom: 16px;"
+      >
+        <template #default>
+          <p>系统已自动从 {{ nextYearOpeningData?.prevClosedYear }} 年度结转数据。</p>
+          <p>结转日期：{{ nextYearOpeningData?.closingDate }}</p>
+          <p>请核对期初数据后确认开账。</p>
+        </template>
+      </el-alert>
+
+      <!-- 首次开账提示 -->
+      <el-alert
+        v-else
         title="开账确认"
         type="warning"
         :closable="false"
@@ -499,8 +516,9 @@
           <el-date-picker
             v-model="openingForm.openingDate"
             type="date"
-            placeholder="选择开账日期"
+            :placeholder="isNextYearOpening ? `选择${nextYearOpeningData?.year}年度开账日期` : '选择开账日期'"
             value-format="YYYY-MM-DD"
+            :disabled-date="disabledDate"
             style="width: 100%"
           />
         </el-form-item>
@@ -516,7 +534,7 @@
       <template #footer>
         <el-button @click="openingDialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="confirming" @click="handleOpeningConfirm">
-          确认开账
+          {{ isNextYearOpening ? '确认开账' : '确认开账' }}
         </el-button>
       </template>
     </el-dialog>
@@ -542,6 +560,10 @@ import {
   saveInitialCashBalance,
   confirmOpening
 } from '@/api/initial'
+import {
+  getNextYearOpening,
+  confirmNextYearOpening
+} from '@/api/annualClosing'
 import { getProductList } from '@/api/product'
 import { getWarehouseList } from '@/api/warehouse'
 import { getCustomerList } from '@/api/customer'
@@ -553,6 +575,10 @@ const openingDate = ref('')
 const activeTab = ref('inventory')
 const confirming = ref(false)
 const openingDialogVisible = ref(false)
+
+// 下年度开账数据
+const nextYearOpeningData = ref(null)
+const isNextYearOpening = ref(false)
 
 // 期初库存
 const inventoryLoading = ref(false)
@@ -641,6 +667,13 @@ const openingForm = reactive({
   openingDate: ''
 })
 
+// 禁用未来日期（开账日期不能晚于今天）
+const disabledDate = (time) => {
+  const today = new Date()
+  today.setHours(23, 59, 59, 999)
+  return time.getTime() > today.getTime()
+}
+
 // 计算汇总金额
 const inventoryTotalAmount = computed(() => {
   return inventoryData.value.reduce((sum, item) => {
@@ -666,6 +699,23 @@ const loadOpeningStatus = async () => {
     const data = await getInitialStatus()
     isOpened.value = data.isOpened
     openingDate.value = data.openingDate
+
+    // 检查是否有下年度开账准备数据
+    const nextYearData = await getNextYearOpening()
+    if (nextYearData && nextYearData.needsOpening) {
+      nextYearOpeningData.value = nextYearData
+      isNextYearOpening.value = true
+
+      // 如果是下年度开账，显示提示信息
+      ElMessageBox.alert(
+        `检测到${nextYearData.year}年度需要进行开账操作。\n系统已自动从${nextYearData.prevClosedYear}年度结转数据。\n\n请核对期初数据后确认开账。`,
+        '次年度开账',
+        {
+          confirmButtonText: '我知道了',
+          type: 'info'
+        }
+      )
+    }
   } catch (error) {
     console.error('加载开账状态失败:', error)
   }
@@ -963,7 +1013,8 @@ const handleSaveCashBalance = async () => {
 
 // 确认开账
 const handleConfirmOpening = () => {
-  openingForm.openingDate = new Date().toISOString().split('T')[0]
+  // 不自动填充日期，让用户手动选择
+  openingForm.openingDate = ''
   openingDialogVisible.value = true
 }
 
@@ -975,10 +1026,33 @@ const handleOpeningConfirm = async () => {
 
   confirming.value = true
   try {
-    await confirmOpening({
-      openingDate: openingForm.openingDate
-    })
-    ElMessage.success('开账成功')
+    // 判断是否是下年度开账
+    if (isNextYearOpening.value && nextYearOpeningData.value) {
+      // 下年度开账
+      await confirmNextYearOpening({
+        openingDate: openingForm.openingDate,
+        year: nextYearOpeningData.value.year,
+        prevClosedYear: nextYearOpeningData.value.prevClosedYear,
+        openingInventory: inventoryData.value,
+        openingReceivables: receivableData.value,
+        openingPayables: payableData.value,
+        openingCash: cashTotalAmount.value,
+        operator: '管理员'
+      })
+
+      // 清除下年度开账准备数据标记
+      isNextYearOpening.value = false
+      nextYearOpeningData.value = null
+
+      ElMessage.success(`${nextYearOpeningData.value.year}年度开账成功！`)
+    } else {
+      // 首次开账
+      await confirmOpening({
+        openingDate: openingForm.openingDate
+      })
+      ElMessage.success('开账成功')
+    }
+
     openingDialogVisible.value = false
     loadOpeningStatus()
   } catch (error) {

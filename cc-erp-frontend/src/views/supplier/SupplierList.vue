@@ -324,14 +324,33 @@ const handleFileChange = async (event) => {
       }
     )
 
+    // 获取现有数据用于查重
+    const existingData = await getSupplierList({ page: 1, size: 10000 })
+    const existingSuppliers = existingData.records || existingData || []
+
     let successCount = 0
+    let skipCount = 0
     let errorCount = 0
 
     for (const row of data) {
       try {
+        const supplierCode = row['供应商编码'] || ''
+        const supplierName = row['供应商名称']
+
+        // 检查是否已存在（按供应商编码或供应商名称）
+        const exists = existingSuppliers.some(s =>
+          (supplierCode && s.supplierCode === supplierCode) ||
+          s.supplierName === supplierName
+        )
+
+        if (exists) {
+          skipCount++
+          continue
+        }
+
         const supplierData = {
-          supplierCode: row['供应商编码'] || '',
-          supplierName: row['供应商名称'],
+          supplierCode: supplierCode,
+          supplierName: supplierName,
           contact: row['联系人'] || '',
           phone: row['联系电话'] || '',
           address: row['地址'] || '',
@@ -348,7 +367,7 @@ const handleFileChange = async (event) => {
       }
     }
 
-    ElMessage.success(`导入完成：成功 ${successCount} 条，失败 ${errorCount} 条`)
+    ElMessage.success(`导入完成：成功 ${successCount} 条，跳过 ${skipCount} 条（重复），失败 ${errorCount} 条`)
     loadData()
   } catch (error) {
     console.error('导入失败:', error)

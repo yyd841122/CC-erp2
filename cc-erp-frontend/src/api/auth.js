@@ -5,18 +5,36 @@ const isMockMode = () => {
   return localStorage.getItem('mockMode') === 'true'
 }
 
-// 模拟登录数据
+// 从 localStorage 获取用户列表
+const getUsers = () => {
+  try {
+    return JSON.parse(localStorage.getItem('cc_erp_test_users') || '[]')
+  } catch (e) {
+    console.error('读取用户数据失败:', e)
+    return []
+  }
+}
+
+// 模拟登录数据（从 localStorage 读取真实用户）
 const mockLogin = (data) => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     setTimeout(() => {
-      if (data.username === 'admin' && data.password === 'admin123') {
+      const users = getUsers()
+      const user = users.find(u => u.username === data.username && u.password === data.password)
+
+      if (user) {
         resolve({
-          token: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzA5NDkxMjAwLCJleHAiOjk5OTk5OTk5OTl9.test',
-          userId: 1,
-          realName: '管理员'
+          token: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI' + user.id + '9.test',
+          userId: user.id,
+          realName: user.realName || user.username
         })
       } else {
-        throw new Error('用户名或密码错误')
+        // 没有找到匹配的用户
+        if (users.length === 0) {
+          reject(new Error('系统暂无用户，请先在系统管理中添加用户'))
+        } else {
+          reject(new Error('用户名或密码错误'))
+        }
       }
     }, 300)
   })
@@ -51,11 +69,26 @@ export const logout = () => {
 // 获取当前用户信息
 export const getCurrentUser = () => {
   if (isMockMode()) {
+    // 从 localStorage 读取当前登录用户的信息
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+    if (userInfo.userId) {
+      const users = getUsers()
+      const user = users.find(u => u.id === userInfo.userId)
+      if (user) {
+        return Promise.resolve({
+          userId: user.id,
+          username: user.username,
+          realName: user.realName || user.username,
+          roles: user.roles || []
+        })
+      }
+    }
+    // 如果没有找到用户，返回基本信息
     return Promise.resolve({
-      userId: 1,
-      username: 'admin',
-      realName: '管理员',
-      roles: ['ADMIN']
+      userId: userInfo.userId || 0,
+      username: userInfo.username || '',
+      realName: userInfo.realName || '未知用户',
+      roles: []
     })
   }
   return request({
