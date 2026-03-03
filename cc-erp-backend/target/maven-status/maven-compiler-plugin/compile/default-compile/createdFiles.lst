@@ -1,0 +1,3 @@
+com\cc\erp\entity\SalOrder.class
+com\cc\erp\entity\SoftDeleteEntity.class
+com\cc\erp\entity\BaseEntity.class

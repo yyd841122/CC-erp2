@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cc.erp.mapper.FinReceivableMapper">
+
+    <resultMap id="BaseResultMap" type="com.cc.erp.entity.FinReceivable">
+        <id column="id" property="id"/>
+        <result column="receivable_no" property="receivableNo"/>
+        <result column="customer_id" property="customerId"/>
+        <result column="customer_name" property="customerName"/>
+        <result column="business_type" property="businessType"/>
+        <result column="reference_id" property="referenceId"/>
+        <result column="reference_no" property="referenceNo"/>
+        <result column="total_amount" property="totalAmount"/>
+        <result column="paid_amount" property="paidAmount"/>
+        <result column="receivable_date" property="receivableDate"/>
+        <result column="due_date" property="dueDate"/>
+        <result column="status" property="status"/>
+        <result column="remark" property="remark"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO fin_receivable (
+            receivable_no, customer_id, customer_name, business_type, reference_id, reference_no,
+            total_amount, paid_amount, receivable_date, due_date, status, remark, created_at
+        ) VALUES (
+            #{receivableNo}, #{customerId}, #{customerName}, #{businessType}, #{referenceId}, #{referenceNo},
+            #{totalAmount}, #{paidAmount}, #{receivableDate}, #{dueDate}, #{status}, #{remark}, #{createdAt}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE fin_receivable SET
+            paid_amount = #{paidAmount},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT * FROM fin_receivable WHERE id = #{id} AND is_deleted = false
+    </select>
+
+    <select id="findList" resultMap="BaseResultMap">
+        SELECT * FROM fin_receivable
+        <where>
+            is_deleted = false
+            <if test="customerName != null and customerName != ''">
+                AND customer_name LIKE CONCAT('%', #{customerName}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="sumTotalAmount" resultType="java.lang.Long">
+        SELECT COALESCE(SUM(total_amount - paid_amount), 0) FROM fin_receivable WHERE is_deleted = false AND status != 'paid'
+    </select>
+
+    <update id="delete">
+        UPDATE fin_receivable SET is_deleted = true, updated_at = NOW() WHERE id = #{id}
+    </update>
+
+</mapper>

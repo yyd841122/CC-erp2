@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cc.erp.mapper.BizSupplierMapper">
+
+    <resultMap id="BaseResultMap" type="com.cc.erp.entity.BizSupplier">
+        <id column="id" property="id"/>
+        <result column="supplier_code" property="supplierCode"/>
+        <result column="supplier_name" property="supplierName"/>
+        <result column="contact" property="contact"/>
+        <result column="phone" property="phone"/>
+        <result column="email" property="email"/>
+        <result column="address" property="address"/>
+        <result column="credit_limit" property="creditLimit"/>
+        <result column="current_debt" property="currentDebt"/>
+        <result column="supplier_level" property="supplierLevel"/>
+        <result column="is_enabled" property="isEnabled"/>
+        <result column="remark" property="remark"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="updated_by" property="updatedBy"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO biz_supplier (
+            supplier_code, supplier_name, contact, phone, email, address,
+            credit_limit, current_debt, supplier_level, is_enabled, remark, created_at, created_by
+        ) VALUES (
+            #{supplierCode}, #{supplierName}, #{contact}, #{phone}, #{email}, #{address},
+            #{creditLimit}, #{currentDebt}, #{supplierLevel}, #{isEnabled}, #{remark}, #{createdAt}, #{createdBy}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE biz_supplier SET
+            supplier_code = #{supplierCode},
+            supplier_name = #{supplierName},
+            contact = #{contact},
+            phone = #{phone},
+            email = #{email},
+            address = #{address},
+            credit_limit = #{creditLimit},
+            current_debt = #{currentDebt},
+            supplier_level = #{supplierLevel},
+            is_enabled = #{isEnabled},
+            remark = #{remark},
+            updated_at = #{updatedAt},
+            updated_by = #{updatedBy}
+        WHERE id = #{id}
+    </update>
+
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT * FROM biz_supplier WHERE id = #{id} AND is_deleted = false
+    </select>
+
+    <select id="findList" resultMap="BaseResultMap">
+        SELECT * FROM biz_supplier
+        <where>
+            is_deleted = false
+            <if test="supplierName != null and supplierName != ''">
+                AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')
+            </if>
+            <if test="isEnabled != null">
+                AND is_enabled = #{isEnabled}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="delete">
+        UPDATE biz_supplier SET is_deleted = true, updated_at = NOW() WHERE id = #{id}
+    </update>
+
+</mapper>

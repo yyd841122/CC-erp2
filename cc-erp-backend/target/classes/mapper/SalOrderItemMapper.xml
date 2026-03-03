@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cc.erp.mapper.SalOrderItemMapper">
+
+    <resultMap id="BaseResultMap" type="com.cc.erp.entity.SalOrderItem">
+        <id column="id" property="id"/>
+        <result column="order_id" property="orderId"/>
+        <result column="product_id" property="productId"/>
+        <result column="product_code" property="productCode"/>
+        <result column="product_name" property="productName"/>
+        <result column="spec" property="spec"/>
+        <result column="unit" property="unit"/>
+        <result column="quantity" property="quantity"/>
+        <result column="price" property="price"/>
+        <result column="tax_rate" property="taxRate"/>
+        <result column="subtotal" property="subtotal"/>
+        <result column="tax_amount" property="taxAmount"/>
+        <result column="final_amount" property="finalAmount"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sal_order_item (
+            order_id, product_id, product_code, product_name, spec, unit,
+            quantity, price, tax_rate, subtotal, tax_amount, final_amount
+        ) VALUES (
+            #{orderId}, #{productId}, #{productCode}, #{productName}, #{spec}, #{unit},
+            #{quantity}, #{price}, #{taxRate}, #{subtotal}, #{taxAmount}, #{finalAmount}
+        )
+    </insert>
+
+    <select id="findByOrderId" resultMap="BaseResultMap">
+        SELECT * FROM sal_order_item WHERE order_id = #{orderId} ORDER BY id
+    </select>
+
+    <delete id="delete">
+        DELETE FROM sal_order_item WHERE id = #{id}
+    </delete>
+
+</mapper>

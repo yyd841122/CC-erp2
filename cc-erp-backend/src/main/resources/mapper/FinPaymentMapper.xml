@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cc.erp.mapper.FinPaymentMapper">
+
+    <resultMap id="BaseResultMap" type="com.cc.erp.entity.FinPayment">
+        <id column="id" property="id"/>
+        <result column="payment_no" property="paymentNo"/>
+        <result column="supplier_id" property="supplierId"/>
+        <result column="supplier_name" property="supplierName"/>
+        <result column="payable_id" property="payableId"/>
+        <result column="payment_date" property="paymentDate"/>
+        <result column="amount" property="amount"/>
+        <result column="payment_method" property="paymentMethod"/>
+        <result column="bank_account" property="bankAccount"/>
+        <result column="handler_id" property="handlerId"/>
+        <result column="handler_name" property="handlerName"/>
+        <result column="remark" property="remark"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO fin_payment (
+            payment_no, supplier_id, supplier_name, payable_id, payment_date,
+            amount, payment_method, bank_account, handler_id, handler_name, remark, created_at
+        ) VALUES (
+            #{paymentNo}, #{supplierId}, #{supplierName}, #{payableId}, #{paymentDate},
+            #{amount}, #{paymentMethod}, #{bankAccount}, #{handlerId}, #{handlerName}, #{remark}, #{createdAt}
+        )
+    </insert>
+
+    <select id="findList" resultMap="BaseResultMap">
+        SELECT * FROM fin_payment
+        <where>
+            <if test="paymentNo != null and paymentNo != ''">
+                AND payment_no LIKE CONCAT('%', #{paymentNo}, '%')
+            </if>
+            <if test="supplierName != null and supplierName != ''">
+                AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')
+            </if>
+        </where>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="sumByCurrentMonth" resultType="java.lang.Long">
+        SELECT COALESCE(SUM(amount), 0) FROM fin_payment
+        WHERE TO_CHAR(created_at, 'YYYYMM') = TO_CHAR(NOW(), 'YYYYMM')
+    </select>
+
+    <select id="countByDate" resultType="int">
+        SELECT COUNT(*) FROM fin_payment
+        WHERE payment_no LIKE CONCAT(#{dateStr}, '%')
+    </select>
+
+</mapper>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cc.erp.mapper.BizProductMapper">
+
+    <resultMap id="BaseResultMap" type="com.cc.erp.entity.BizProduct">
+        <id column="id" property="id"/>
+        <result column="product_code" property="productCode"/>
+        <result column="product_name" property="productName"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="category_name" property="categoryName"/>
+        <result column="spec" property="spec"/>
+        <result column="unit" property="unit"/>
+        <result column="cost_price" property="costPrice"/>
+        <result column="sale_price" property="salePrice"/>
+        <result column="min_stock" property="minStock"/>
+        <result column="max_stock" property="maxStock"/>
+        <result column="is_enabled" property="isEnabled"/>
+        <result column="remark" property="remark"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_by" property="updatedBy"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT * FROM biz_product
+        WHERE id = #{id}
+          AND is_deleted = false
+    </select>
+
+    <select id="findByCode" resultMap="BaseResultMap">
+        SELECT * FROM biz_product
+        WHERE product_code = #{productCode}
+          AND is_deleted = false
+    </select>
+
+    <select id="findList" resultMap="BaseResultMap">
+        SELECT * FROM biz_product
+        <where>
+            is_deleted = false
+            <if test="productName != null and productName != ''">
+                AND product_name LIKE CONCAT('%', #{productName}, '%')
+            </if>
+            <if test="categoryId != null">
+                AND category_id = #{categoryId}
+            </if>
+            <if test="isEnabled != null">
+                AND is_enabled = #{isEnabled}
+            </if>
+        </where>
+        ORDER BY id DESC
+    </select>
+
+    <insert id="insert" parameterType="com.cc.erp.entity.BizProduct" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO biz_product (product_code, product_name, category_id, category_name,
+                                spec, unit, cost_price, sale_price, min_stock, max_stock,
+                                is_enabled, remark, created_by, created_at)
+        VALUES (#{productCode}, #{productName}, #{categoryId}, #{categoryName},
+                #{spec}, #{unit}, #{costPrice}, #{salePrice}, #{minStock}, #{maxStock},
+                #{isEnabled}, #{remark}, #{createdBy}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <update id="update" parameterType="com.cc.erp.entity.BizProduct">
+        UPDATE biz_product
+        SET product_name = #{productName},
+            category_id = #{categoryId},
+            category_name = #{categoryName},
+            spec = #{spec},
+            unit = #{unit},
+            cost_price = #{costPrice},
+            sale_price = #{salePrice},
+            min_stock = #{minStock},
+            max_stock = #{maxStock},
+            is_enabled = #{isEnabled},
+            remark = #{remark},
+            updated_by = #{updatedBy},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="softDelete">
+        UPDATE biz_product
+        SET is_deleted = true,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+</mapper>

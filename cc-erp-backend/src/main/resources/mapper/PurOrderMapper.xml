@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cc.erp.mapper.PurOrderMapper">
+
+    <resultMap id="BaseResultMap" type="com.cc.erp.entity.PurOrder">
+        <id column="id" property="id"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="supplier_id" property="supplierId"/>
+        <result column="supplier_name" property="supplierName"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="warehouse_name" property="warehouseName"/>
+        <result column="total_amount" property="totalAmount"/>
+        <result column="tax_amount" property="taxAmount"/>
+        <result column="final_amount" property="finalAmount"/>
+        <result column="payment_amount" property="paymentAmount"/>
+        <result column="order_date" property="orderDate"/>
+        <result column="expected_date" property="expectedDate"/>
+        <result column="status" property="status"/>
+        <result column="remark" property="remark"/>
+        <result column="approved_by" property="approvedBy"/>
+        <result column="approved_at" property="approvedAt"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_by" property="updatedBy"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="is_deleted" property="isDeleted"/>
+        <result column="version" property="version"/>
+    </resultMap>
+
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT * FROM pur_order
+        WHERE id = #{id}
+          AND is_deleted = false
+    </select>
+
+    <select id="findByOrderNo" resultMap="BaseResultMap">
+        SELECT * FROM pur_order
+        WHERE order_no = #{orderNo}
+          AND is_deleted = false
+    </select>
+
+    <select id="findList" resultMap="BaseResultMap">
+        SELECT * FROM pur_order
+        <where>
+            is_deleted = false
+            <if test="supplierId != null">
+                AND supplier_id = #{supplierId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="startDate != null">
+                AND order_date >= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND order_date &lt;= #{endDate}
+            </if>
+        </where>
+        ORDER BY id DESC
+    </select>
+
+    <insert id="insert" parameterType="com.cc.erp.entity.PurOrder" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pur_order (order_no, supplier_id, supplier_name, warehouse_id, warehouse_name,
+                              total_amount, tax_amount, final_amount, order_date, expected_date,
+                              status, remark, created_by, created_at, version)
+        VALUES (#{orderNo}, #{supplierId}, #{supplierName}, #{warehouseId}, #{warehouseName},
+                #{totalAmount}, #{taxAmount}, #{finalAmount}, #{orderDate}, #{expectedDate},
+                #{status}, #{remark}, #{createdBy}, CURRENT_TIMESTAMP, 0)
+    </insert>
+
+    <update id="update" parameterType="com.cc.erp.entity.PurOrder">
+        UPDATE pur_order
+        SET supplier_id = #{supplierId},
+            supplier_name = #{supplierName},
+            warehouse_id = #{warehouseId},
+            warehouse_name = #{warehouseName},
+            total_amount = #{totalAmount},
+            tax_amount = #{taxAmount},
+            final_amount = #{finalAmount},
+            expected_date = #{expectedDate},
+            remark = #{remark},
+            updated_by = #{updatedBy},
+            updated_at = CURRENT_TIMESTAMP,
+            version = version + 1
+        WHERE id = #{id}
+    </update>
+
+    <update id="approve" parameterType="com.cc.erp.entity.PurOrder">
+        UPDATE pur_order
+        SET status = #{status},
+            approved_by = #{approvedBy},
+            approved_at = #{approvedAt},
+            updated_by = #{updatedBy},
+            updated_at = CURRENT_TIMESTAMP,
+            version = version + 1
+        WHERE id = #{id}
+          AND version = #{version}
+    </update>
+
+</mapper>

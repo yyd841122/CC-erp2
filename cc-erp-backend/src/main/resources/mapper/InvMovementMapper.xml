@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cc.erp.mapper.InvMovementMapper">
+
+    <resultMap id="BaseResultMap" type="com.cc.erp.entity.InvMovement">
+        <id column="id" property="id"/>
+        <result column="movement_no" property="movementNo"/>
+        <result column="product_id" property="productId"/>
+        <result column="product_code" property="productCode"/>
+        <result column="product_name" property="productName"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="warehouse_name" property="warehouseName"/>
+        <result column="movement_type" property="movementType"/>
+        <result column="business_type" property="businessType"/>
+        <result column="quantity" property="quantity"/>
+        <result column="before_stock" property="beforeStock"/>
+        <result column="after_stock" property="afterStock"/>
+        <result column="unit_price" property="unitPrice"/>
+        <result column="amount" property="amount"/>
+        <result column="reference_id" property="referenceId"/>
+        <result column="reference_no" property="referenceNo"/>
+        <result column="remark" property="remark"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO inv_movement (
+            movement_no, product_id, product_code, product_name, warehouse_id, warehouse_name,
+            movement_type, business_type, quantity, before_stock, after_stock,
+            unit_price, amount, reference_id, reference_no, remark, created_at
+        ) VALUES (
+            #{movementNo}, #{productId}, #{productCode}, #{productName}, #{warehouseId}, #{warehouseName},
+            #{movementType}, #{businessType}, #{quantity}, #{beforeStock}, #{afterStock},
+            #{unitPrice}, #{amount}, #{referenceId}, #{referenceNo}, #{remark}, #{createdAt}
+        )
+    </insert>
+
+    <select id="findList" resultMap="BaseResultMap">
+        SELECT * FROM inv_movement
+        <where>
+            <if test="productId != null">
+                AND product_id = #{productId}
+            </if>
+            <if test="warehouseId != null">
+                AND warehouse_id = #{warehouseId}
+            </if>
+            <if test="movementType != null and movementType != ''">
+                AND movement_type = #{movementType}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+    </select>
+
+</mapper>

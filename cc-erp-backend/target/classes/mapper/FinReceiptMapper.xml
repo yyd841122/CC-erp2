@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cc.erp.mapper.FinReceiptMapper">
+
+    <resultMap id="BaseResultMap" type="com.cc.erp.entity.FinReceipt">
+        <id column="id" property="id"/>
+        <result column="receipt_no" property="receiptNo"/>
+        <result column="customer_id" property="customerId"/>
+        <result column="customer_name" property="customerName"/>
+        <result column="receivable_id" property="receivableId"/>
+        <result column="receipt_date" property="receiptDate"/>
+        <result column="amount" property="amount"/>
+        <result column="payment_method" property="paymentMethod"/>
+        <result column="bank_account" property="bankAccount"/>
+        <result column="handler_id" property="handlerId"/>
+        <result column="handler_name" property="handlerName"/>
+        <result column="remark" property="remark"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO fin_receipt (
+            receipt_no, customer_id, customer_name, receivable_id, receipt_date,
+            amount, payment_method, bank_account, handler_id, handler_name, remark, created_at
+        ) VALUES (
+            #{receiptNo}, #{customerId}, #{customerName}, #{receivableId}, #{receiptDate},
+            #{amount}, #{paymentMethod}, #{bankAccount}, #{handlerId}, #{handlerName}, #{remark}, #{createdAt}
+        )
+    </insert>
+
+    <select id="findList" resultMap="BaseResultMap">
+        SELECT * FROM fin_receipt
+        <where>
+            <if test="receiptNo != null and receiptNo != ''">
+                AND receipt_no LIKE CONCAT('%', #{receiptNo}, '%')
+            </if>
+            <if test="customerName != null and customerName != ''">
+                AND customer_name LIKE CONCAT('%', #{customerName}, '%')
+            </if>
+        </where>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="sumByCurrentMonth" resultType="java.lang.Long">
+        SELECT COALESCE(SUM(amount), 0) FROM fin_receipt
+        WHERE TO_CHAR(created_at, 'YYYYMM') = TO_CHAR(NOW(), 'YYYYMM')
+    </select>
+
+    <select id="countByDate" resultType="int">
+        SELECT COUNT(*) FROM fin_receipt
+        WHERE receipt_no LIKE CONCAT(#{dateStr}, '%')
+    </select>
+
+</mapper>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cc.erp.mapper.BizWarehouseMapper">
+
+    <resultMap id="BaseResultMap" type="com.cc.erp.entity.BizWarehouse">
+        <id column="id" property="id"/>
+        <result column="warehouse_code" property="warehouseCode"/>
+        <result column="warehouse_name" property="warehouseName"/>
+        <result column="manager" property="manager"/>
+        <result column="phone" property="phone"/>
+        <result column="address" property="address"/>
+        <result column="is_enabled" property="isEnabled"/>
+        <result column="remark" property="remark"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="updated_by" property="updatedBy"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO biz_warehouse (
+            warehouse_code, warehouse_name, manager, phone, address,
+            is_enabled, remark, created_at, created_by
+        ) VALUES (
+            #{warehouseCode}, #{warehouseName}, #{manager}, #{phone}, #{address},
+            #{isEnabled}, #{remark}, #{createdAt}, #{createdBy}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE biz_warehouse SET
+            warehouse_code = #{warehouseCode},
+            warehouse_name = #{warehouseName},
+            manager = #{manager},
+            phone = #{phone},
+            address = #{address},
+            is_enabled = #{isEnabled},
+            remark = #{remark},
+            updated_at = #{updatedAt},
+            updated_by = #{updatedBy}
+        WHERE id = #{id}
+    </update>
+
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT * FROM biz_warehouse WHERE id = #{id} AND is_deleted = false
+    </select>
+
+    <select id="findList" resultMap="BaseResultMap">
+        SELECT * FROM biz_warehouse WHERE is_deleted = false ORDER BY created_at DESC
+    </select>
+
+    <update id="delete">
+        UPDATE biz_warehouse SET is_deleted = true, updated_at = NOW() WHERE id = #{id}
+    </update>
+
+</mapper>

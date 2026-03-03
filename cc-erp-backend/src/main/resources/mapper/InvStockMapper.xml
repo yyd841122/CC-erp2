@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cc.erp.mapper.InvStockMapper">
+
+    <resultMap id="BaseResultMap" type="com.cc.erp.entity.InvStock">
+        <id column="id" property="id"/>
+        <result column="product_id" property="productId"/>
+        <result column="product_code" property="productCode"/>
+        <result column="product_name" property="productName"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="warehouse_name" property="warehouseName"/>
+        <result column="quantity" property="quantity"/>
+        <result column="min_stock" property="minStock"/>
+        <result column="max_stock" property="maxStock"/>
+        <result column="avg_cost" property="avgCost"/>
+        <result column="last_in_date" property="lastInDate"/>
+        <result column="last_out_date" property="lastOutDate"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT * FROM inv_stock WHERE id = #{id}
+    </select>
+
+    <select id="findByProductAndWarehouse" resultMap="BaseResultMap">
+        SELECT * FROM inv_stock
+        WHERE product_id = #{productId} AND warehouse_id = #{warehouseId}
+        LIMIT 1
+    </select>
+
+    <select id="findList" resultMap="BaseResultMap">
+        SELECT s.*, p.spec, p.unit
+        FROM inv_stock s
+        LEFT JOIN biz_product p ON s.product_id = p.id
+        <where>
+            <if test="productCode != null and productCode != ''">
+                AND s.product_code LIKE CONCAT('%', #{productCode}, '%')
+            </if>
+            <if test="productName != null and productName != ''">
+                AND s.product_name LIKE CONCAT('%', #{productName}, '%')
+            </if>
+            <if test="warehouseId != null">
+                AND s.warehouse_id = #{warehouseId}
+            </if>
+            <if test="stockStatus == 'normal'">
+                AND s.quantity >= s.min_stock AND (s.max_stock IS NULL OR s.quantity &lt;= s.max_stock)
+            </if>
+            <if test="stockStatus == 'low'">
+                AND s.quantity &gt; 0 AND s.quantity &lt; s.min_stock
+            </if>
+            <if test="stockStatus == 'out'">
+                AND s.quantity = 0
+            </if>
+            <if test="stockStatus == 'over'">
+                AND s.max_stock IS NOT NULL AND s.quantity &gt; s.max_stock
+            </if>
+        </where>
+        ORDER BY s.created_at DESC
+    </select>
+
+    <select id="findAlertStocks" resultMap="BaseResultMap">
+        SELECT * FROM inv_stock
+        WHERE quantity = 0 OR quantity &lt; min_stock OR (max_stock IS NOT NULL AND quantity &gt; max_stock)
+        ORDER BY quantity ASC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO inv_stock (
+            product_id, product_code, product_name, warehouse_id, warehouse_name,
+            quantity, min_stock, max_stock, avg_cost, created_at
+        ) VALUES (
+            #{productId}, #{productCode}, #{productName}, #{warehouseId}, #{warehouseName},
+            #{quantity}, #{minStock}, #{maxStock}, #{avgCost}, #{createdAt}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE inv_stock SET
+            quantity = #{quantity},
+            avg_cost = #{avgCost},
+            last_in_date = #{lastInDate},
+            last_out_date = #{lastOutDate},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+</mapper>

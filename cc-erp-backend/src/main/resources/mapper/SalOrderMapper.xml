@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cc.erp.mapper.SalOrderMapper">
+
+    <resultMap id="BaseResultMap" type="com.cc.erp.entity.SalOrder">
+        <id column="id" property="id"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="customer_id" property="customerId"/>
+        <result column="customer_name" property="customerName"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="warehouse_name" property="warehouseName"/>
+        <result column="order_date" property="orderDate"/>
+        <result column="delivery_date" property="deliveryDate"/>
+        <result column="total_amount" property="totalAmount"/>
+        <result column="tax_amount" property="taxAmount"/>
+        <result column="final_amount" property="finalAmount"/>
+        <result column="status" property="status"/>
+        <result column="remark" property="remark"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="updated_by" property="updatedBy"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sal_order (
+            order_no, customer_id, customer_name, warehouse_id, warehouse_name,
+            order_date, delivery_date, total_amount, tax_amount, final_amount,
+            status, remark, created_at, created_by
+        ) VALUES (
+            #{orderNo}, #{customerId}, #{customerName}, #{warehouseId}, #{warehouseName},
+            #{orderDate}, #{deliveryDate}, #{totalAmount}, #{taxAmount}, #{finalAmount},
+            #{status}, #{remark}, #{createdAt}, #{createdBy}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE sal_order SET
+            customer_id = #{customerId},
+            customer_name = #{customerName},
+            warehouse_id = #{warehouseId},
+            warehouse_name = #{warehouseName},
+            order_date = #{orderDate},
+            delivery_date = #{deliveryDate},
+            total_amount = #{totalAmount},
+            tax_amount = #{taxAmount},
+            final_amount = #{finalAmount},
+            status = #{status},
+            remark = #{remark},
+            updated_at = #{updatedAt},
+            updated_by = #{updatedBy}
+        WHERE id = #{id}
+    </update>
+
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT * FROM sal_order WHERE id = #{id} AND is_deleted = false
+    </select>
+
+    <select id="findList" resultMap="BaseResultMap">
+        SELECT * FROM sal_order
+        <where>
+            is_deleted = false
+            <if test="orderNo != null and orderNo != ''">
+                AND order_no LIKE CONCAT('%', #{orderNo}, '%')
+            </if>
+            <if test="customerName != null and customerName != ''">
+                AND customer_name LIKE CONCAT('%', #{customerName}, '%')
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="countByDate" resultType="int">
+        SELECT COUNT(*) FROM sal_order
+        WHERE order_no LIKE CONCAT(#{dateStr}, '%')
+    </select>
+
+    <update id="delete">
+        UPDATE sal_order SET is_deleted = true, updated_at = NOW() WHERE id = #{id}
+    </update>
+
+</mapper>

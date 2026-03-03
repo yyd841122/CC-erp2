@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev)",
+      "Bash(npm install)",
+      "Bash(mvn spring-boot:run)",
+      "Bash(java -version)",
+      "Bash(npm install xlsx)",
+      "Bash(npx vite)",
+      "Bash(npm install vite@^5.0.0 --save-dev)",
+      "Bash(npx --yes vite@5.4.21)",
+      "Bash(npm install --no-save vite@5.4.21)",
+      "Bash(npm install vite@latest --save-dev --force)",
+      "Bash(npm install vite@5 --save-dev --legacy-peer-deps)",
+      "Bash(mvn -version)",
+      "Bash(psql --version)",
+      "Bash(cmd /c init-wrapper.bat)",
+      "Bash(powershell -Command \"Invoke-WebRequest -Uri ''https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/3.2.0/maven-wrapper-3.2.0.jar'' -OutFile ''e:/CC_ERP/cc-erp-backend/.mvn/wrapper/maven-wrapper.jar''\")",
+      "Bash(cmd /c mvnw.cmd -version)",
+      "Bash(cmd /c mvnw.cmd clean compile -DskipTests)",
+      "Bash(java -jar .mvn/wrapper/maven-wrapper.jar --version)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5175/)",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(netstat -ano)",
+      "Read(//e/CC_ERP/**)",
+      "Bash(xargs -I {} taskkill /F /PID {})",
+      "Bash(tasklist)",
+      "Bash(cmd.exe /c \"taskkill /F /IM node.exe\")",
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(npx eslint src/api/report.js --no-ignore)",
+      "Bash(curl -s http://localhost:5173/report)",
+      "Bash(cmd //c start-dev.bat)",
+      "Bash(./mvnw.cmd spring-boot:run)"
+    ]
+  }
+}
