@@ -27,7 +27,31 @@ public class SysUser extends SoftDeleteEntity {
     /**
      * 密码哈希
      */
+    @lombok.Setter(lombok.AccessLevel.NONE)
+    @lombok.Getter(lombok.AccessLevel.NONE)
     private String passwordHash;
+
+    /**
+     * 密码（用于业务逻辑，映射到 passwordHash）
+     */
+    public String getPassword() {
+        return passwordHash;
+    }
+
+    public void setPassword(String password) {
+        this.passwordHash = password;
+    }
+
+    /**
+     * 获取密码哈希（用于安全认证）
+     */
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
 
     /**
      * 真实姓名

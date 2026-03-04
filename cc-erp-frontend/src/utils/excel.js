@@ -60,12 +60,30 @@ export const importFromExcel = (file) => {
         const firstSheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[firstSheetName]
 
-        // 解析为 JSON
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-          defval: null // 空单元格返回 null
+        // 先解析所有数据（不指定 range）
+        const allData = XLSX.utils.sheet_to_json(worksheet, {
+          defval: null
         })
 
-        resolve(jsonData)
+        // 过滤掉无效行（说明行、空行等）
+        // 只保留包含"分类名称"等业务字段的行
+        const validData = allData.filter(row => {
+          // 检查是否包含任何业务数据字段（非说明性文字）
+          const keys = Object.keys(row)
+          const hasBusinessField = keys.some(key => {
+            const val = String(row[key]).trim()
+            // 跳过说明性文字
+            if (val.includes('说明') || val.includes('必填') || val.includes('选填') || val === '示例') {
+              return false
+            }
+            // 检查是否有实际内容
+            return val !== null && val !== undefined && val !== ''
+          })
+          return hasBusinessField
+        })
+
+        console.log('[Excel导入] 解析结果:', { total: allData.length, valid: validData.length })
+        resolve(validData)
       } catch (error) {
         reject(error)
       }

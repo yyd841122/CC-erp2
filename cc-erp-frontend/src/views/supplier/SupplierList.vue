@@ -368,6 +368,11 @@ const handleFileChange = async (event) => {
     }
 
     ElMessage.success(`导入完成：成功 ${successCount} 条，跳过 ${skipCount} 条（重复），失败 ${errorCount} 条`)
+    // 清空搜索条件并重新加载
+    searchForm.supplierName = ''
+    searchForm.contact = ''
+    searchForm.isEnabled = ''
+    pagination.page = 1
     loadData()
   } catch (error) {
     console.error('导入失败:', error)

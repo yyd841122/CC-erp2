@@ -27,52 +27,16 @@ export const useUserStore = defineStore('user', () => {
       return data
     }
 
-    try {
-      const data = await loginApi(loginForm)
-      token.value = data.token
-      userInfo.value = {
-        userId: data.userId,
-        realName: data.realName
-      }
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('userInfo', JSON.stringify(userInfo.value))
-      return data
-    } catch (error) {
-      // 后端未启动时使用模拟数据（开发测试）
-      console.log('登录错误详情:', error)
-      const isNetworkError =
-        error.code === 'ERR_NETWORK' ||
-        error.code === 'ECONNREFUSED' ||
-        error.message?.includes('Network') ||
-        error.message?.includes('ECONNREFUSED') ||
-        !error.response ||
-        error.response?.status >= 500
-
-      if (isNetworkError) {
-        console.warn('后端服务异常，切换至模拟数据模式')
-        ElMessage.warning('后端服务异常，已切换至模拟数据模式')
-
-        // 设置模拟模式标志
-        localStorage.setItem('mockMode', 'true')
-
-        // 重新调用登录API（这次会使用模拟数据）
-        try {
-          const data = await loginApi(loginForm)
-          token.value = data.token
-          userInfo.value = {
-            userId: data.userId,
-            realName: data.realName
-          }
-          localStorage.setItem('token', data.token)
-          localStorage.setItem('userInfo', JSON.stringify(userInfo.value))
-          return data
-        } catch (retryError) {
-          console.error('模拟登录失败:', retryError)
-          throw new Error('模拟登录失败，请检查用户名和密码')
-        }
-      }
-      throw error
+    // 正式模式 - 连接后端服务
+    const data = await loginApi(loginForm)
+    token.value = data.token
+    userInfo.value = {
+      userId: data.userId,
+      realName: data.realName
     }
+    localStorage.setItem('token', data.token)
+    localStorage.setItem('userInfo', JSON.stringify(userInfo.value))
+    return data
   }
 
   // 登出

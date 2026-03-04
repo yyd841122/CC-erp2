@@ -61,9 +61,23 @@ public class BusinessException extends RuntimeException {
     }
 
     /**
+     * 参数错误（默认消息）
+     */
+    public static BusinessException badRequest() {
+        return new BusinessException(400, "请求参数错误");
+    }
+
+    /**
      * 资源不存在
      */
     public static BusinessException notFound(String message) {
         return new BusinessException(404, message);
+    }
+
+    /**
+     * 资源不存在（默认消息）
+     */
+    public static BusinessException notFound() {
+        return new BusinessException(404, "资源不存在");
     }
 }

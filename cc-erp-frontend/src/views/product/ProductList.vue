@@ -474,6 +474,11 @@ const handleFileChange = async (event) => {
     }
 
     ElMessage.success(`导入完成：成功 ${successCount} 条，跳过 ${skipCount} 条（重复），失败 ${errorCount} 条`)
+    // 清空搜索条件并重新加载
+    searchForm.productName = ''
+    searchForm.categoryId = ''
+    searchForm.isEnabled = ''
+    pagination.page = 1
     updateCategoryCount()  // 更新分类的商品数量
     loadData()
   } catch (error) {

@@ -202,7 +202,8 @@ request.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    // 模拟模式处理
+    // 模拟模式处理（已禁用 - 使用正式后端）
+    // 如需使用模拟模式，请在登录时勾选"模拟模式"选项
     if (isMockMode() && error.config?.mockMode) {
       console.log('[模拟模式] 检测到网络错误，切换到模拟数据')
       return handleMockResponse(error)

@@ -203,7 +203,11 @@ const handleAddCategory = () => {
     return
   }
 
-  const newId = Math.max(...categories.value.map(c => c.id), 0) + 1
+  // 安全地获取新ID
+  const maxId = categories.value.length > 0
+    ? Math.max(...categories.value.map(c => c.id))
+    : 0
+  const newId = maxId + 1
   const now = new Date()
   const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
@@ -364,14 +368,26 @@ const handleFileChange = async (event) => {
       }
     )
 
+    // 重新加载分类数据以确保获取最新数据
+    loadCategories()
+
+    // 先打印Excel原始数据用于调试
+    console.log('Excel 原始数据:', data)
+    console.log('当前分类数据:', categories.value)
+
     let successCount = 0
     let skipCount = 0
+    let errorCount = 0
 
     for (const row of data) {
       try {
+        console.log('处理行数据:', row)
         const categoryName = row['分类名称']
+        console.log('提取的分类名称:', categoryName)
+
         if (!categoryName || !categoryName.trim()) {
-          skipCount++
+          console.warn('跳过空分类名称:', row)
+          errorCount++
           continue
         }
 
@@ -381,29 +397,39 @@ const handleFileChange = async (event) => {
         )
 
         if (exists) {
+          console.log('分类已存在，跳过:', categoryName)
           skipCount++
           continue
         }
 
-        const newId = Math.max(...categories.value.map(c => c.id), 0) + 1
+        // 安全地获取新ID
+        const maxId = categories.value.length > 0
+          ? Math.max(...categories.value.map(c => c.id))
+          : 0
+        const newId = maxId + 1
         const now = new Date()
         const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
-        categories.value.push({
+        const newCategory = {
           id: newId,
           categoryName: categoryName.trim(),
           productCount: 0,
           createdAt: timeStr
-        })
+        }
 
+        console.log('添加新分类:', newCategory)
+        categories.value.push(newCategory)
         successCount++
       } catch (err) {
-        console.error('导入失败:', row, err)
+        console.error('导入失败 - 行数据:', row, '错误:', err)
+        errorCount++
       }
     }
 
+    // 保存到 localStorage
     saveCategories()
-    ElMessage.success(`导入完成：成功 ${successCount} 条，跳过 ${skipCount} 条（重复或无效）`)
+    console.log('导入完成，当前分类数据:', categories.value)
+    ElMessage.success(`导入完成：成功 ${successCount} 条，跳过 ${skipCount} 条（重复），失败 ${errorCount} 条`)
     emit('refresh')
   } catch (error) {
     if (error !== 'cancel') {
