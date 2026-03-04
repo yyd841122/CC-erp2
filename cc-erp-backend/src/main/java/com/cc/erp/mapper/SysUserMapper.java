@@ -43,4 +43,9 @@ public interface SysUserMapper {
      * 查询用户列表
      */
     List<SysUser> findList(@Param("keyword") String keyword, @Param("status") Boolean status);
+
+    /**
+     * 查询用户权限代码列表
+     */
+    List<String> findUserPermissions(@Param("userId") Long userId);
 }

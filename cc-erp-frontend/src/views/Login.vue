@@ -4,9 +4,6 @@
       <div class="login-header">
         <h1 class="title">CC ERP</h1>
         <p class="subtitle">企业管理系统</p>
-        <el-tag v-if="isMockMode" type="warning" size="small" style="margin-top: 8px">
-          模拟数据模式
-        </el-tag>
       </div>
 
       <!-- 系统未初始化提示 -->
@@ -57,12 +54,6 @@
           >
             {{ loading ? '登录中...' : (hasUsers ? '登录' : '请先初始化系统') }}
           </el-button>
-        </el-form-item>
-
-        <el-form-item>
-          <el-checkbox v-model="mockModeEnabled" @change="handleMockModeChange">
-            使用模拟数据模式（无需后端）
-          </el-checkbox>
         </el-form-item>
 
         <el-form-item v-if="!hasUsers">
@@ -138,14 +129,8 @@ const loginFormRef = ref()
 const initFormRef = ref()
 const loading = ref(false)
 const initSubmitting = ref(false)
-const mockModeEnabled = ref(false)
 const showInitDialog = ref(false)
 const hasUsers = ref(true)
-
-// 检查是否为模拟模式
-const isMockMode = computed(() => {
-  return localStorage.getItem('mockMode') === 'true'
-})
 
 // 检查系统是否有用户
 const checkHasUsers = () => {
@@ -157,23 +142,10 @@ const checkHasUsers = () => {
   }
 }
 
-// 初始化时检查模拟模式和用户状态
+// 初始化时检查用户状态
 onMounted(() => {
-  mockModeEnabled.value = isMockMode.value
   checkHasUsers()
 })
-
-// 处理模拟模式切换
-const handleMockModeChange = (checked) => {
-  if (checked) {
-    localStorage.setItem('mockMode', 'true')
-    ElMessage.info('已启用模拟数据模式')
-  } else {
-    localStorage.removeItem('mockMode')
-    ElMessage.info('已关闭模拟数据模式')
-  }
-  checkHasUsers()
-}
 
 const loginForm = reactive({
   username: '',
@@ -303,10 +275,6 @@ const handleLogin = async () => {
     router.push('/')
   } catch (error) {
     console.error('登录失败:', error)
-    // 如果是网络错误且未启用模拟模式，提示用户
-    if (!mockModeEnabled.value && error.message?.includes('模拟登录')) {
-      ElMessage.warning('请勾选"使用模拟数据模式"后再试')
-    }
   } finally {
     loading.value = false
   }
