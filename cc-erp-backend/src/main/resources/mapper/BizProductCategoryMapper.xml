@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cc.erp.mapper.BizProductCategoryMapper">
+
+    <resultMap id="BaseResultMap" type="com.cc.erp.entity.BizProductCategory">
+        <id column="id" property="id"/>
+        <result column="category_code" property="categoryCode"/>
+        <result column="category_name" property="categoryName"/>
+        <result column="parent_id" property="parentId"/>
+        <result column="level" property="level"/>
+        <result column="sort_order" property="sortOrder"/>
+        <result column="status" property="status"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_by" property="updatedBy"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="is_deleted" property="isDeleted"/>
+        <result column="product_count" property="productCount"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="BaseResultMap">
+        SELECT c.*,
+               COALESCE(COUNT(p.id), 0) as product_count
+        FROM biz_product_category c
+        LEFT JOIN biz_product p ON c.id = p.category_id AND p.is_deleted = false
+        WHERE c.is_deleted = false
+        GROUP BY c.id
+        ORDER BY c.sort_order, c.id
+    </select>
+
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT * FROM biz_product_category
+        WHERE id = #{id}
+          AND is_deleted = false
+    </select>
+
+    <insert id="insert" parameterType="com.cc.erp.entity.BizProductCategory" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO biz_product_category (
+            category_code, category_name, parent_id, level, sort_order, status, created_by, created_at
+        ) VALUES (
+            #{categoryCode}, #{categoryName}, #{parentId}, #{level}, #{sortOrder}, #{status}, #{createdBy}, CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <update id="update" parameterType="com.cc.erp.entity.BizProductCategory">
+        UPDATE biz_product_category
+        SET category_name = #{categoryName},
+            parent_id = #{parentId},
+            level = #{level},
+            sort_order = #{sortOrder},
+            status = #{status},
+            updated_by = #{updatedBy},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="delete">
+        UPDATE biz_product_category
+        SET is_deleted = true
+        WHERE id = #{id}
+    </update>
+
+    <select id="countByName" resultType="int">
+        SELECT COUNT(*) FROM biz_product_category
+        WHERE category_name = #{categoryName}
+          AND is_deleted = false
+    </select>
+
+    <select id="getMaxId" resultType="long">
+        SELECT COALESCE(MAX(id), 0) FROM biz_product_category
+    </select>
+
+</mapper>

@@ -249,3 +249,117 @@ export const deleteProduct = (id) => {
     method: 'delete'
   })
 }
+
+// ==================== 商品分类 API ====================
+
+// 模拟分类列表
+const mockCategoryList = () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      let categories = getData(STORAGE_KEYS.CATEGORIES) || []
+      // 计算每个分类的商品数量
+      const products = getData(STORAGE_KEYS.PRODUCTS) || []
+      categories = categories.map(c => ({
+        ...c,
+        productCount: products.filter(p => p.categoryId == c.id).length
+      }))
+      resolve(categories)
+    }, 100)
+  })
+}
+
+// 模拟创建分类
+const mockCreateCategory = (data) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const categories = getData(STORAGE_KEYS.CATEGORIES) || []
+      const newId = Math.max(...categories.map(c => c.id), 0) + 1
+      const newCategory = {
+        ...data,
+        id: newId,
+        productCount: 0,
+        createdAt: new Date().toISOString().slice(0, 19).replace('T', ' ')
+      }
+      categories.push(newCategory)
+      saveData(STORAGE_KEYS.CATEGORIES, categories)
+      resolve(newCategory)
+    }, 200)
+  })
+}
+
+// 模拟更新分类
+const mockUpdateCategory = (id, data) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const categories = getData(STORAGE_KEYS.CATEGORIES) || []
+      const index = categories.findIndex(c => c.id == id)
+      if (index !== -1) {
+        categories[index] = { ...categories[index], ...data }
+        saveData(STORAGE_KEYS.CATEGORIES, categories)
+        resolve(categories[index])
+      }
+    }, 200)
+  })
+}
+
+// 模拟删除分类
+const mockDeleteCategory = (id) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      let categories = getData(STORAGE_KEYS.CATEGORIES) || []
+      categories = categories.filter(c => c.id != id)
+      saveData(STORAGE_KEYS.CATEGORIES, categories)
+      resolve()
+    }, 200)
+  })
+}
+
+// 查询分类列表
+export const getCategoryList = () => {
+  if (isMockMode()) {
+    console.log('[模拟模式] 分类列表查询')
+    return mockCategoryList()
+  }
+  return request({
+    url: '/v1/product-categories',
+    method: 'get'
+  })
+}
+
+// 创建分类
+export const createCategory = (data) => {
+  if (isMockMode()) {
+    console.log('[模拟模式] 创建分类', data)
+    return mockCreateCategory(data)
+  }
+  return request({
+    url: '/v1/product-categories',
+    method: 'post',
+    data
+  })
+}
+
+// 更新分类
+export const updateCategory = (id, data) => {
+  if (isMockMode()) {
+    console.log('[模拟模式] 更新分类', id, data)
+    return mockUpdateCategory(id, data)
+  }
+  return request({
+    url: `/v1/product-categories/${id}`,
+    method: 'put',
+    data
+  })
+}
+
+// 删除分类
+export const deleteCategory = (id) => {
+  if (isMockMode()) {
+    console.log('[模拟模式] 删除分类', id)
+    return mockDeleteCategory(id)
+  }
+  return request({
+    url: `/v1/product-categories/${id}`,
+    method: 'delete'
+  })
+}
