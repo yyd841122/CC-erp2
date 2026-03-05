@@ -51,14 +51,4 @@
         WHERE id = #{id}
     </update>
 
-    <!-- 查询用户权限代码列表 -->
-    <select id="findUserPermissions" resultType="java.lang.String">
-        SELECT DISTINCT sp.perm_code
-        FROM sys_user_role sur
-        INNER JOIN sys_role_permission srp ON sur.role_id = srp.role_id
-        INNER JOIN sys_permission sp ON srp.permission_id = sp.id
-        WHERE sur.user_id = #{userId}
-        ORDER BY sp.perm_code
-    </select>
-
 </mapper>

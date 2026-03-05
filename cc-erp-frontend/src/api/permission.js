@@ -29,10 +29,34 @@ const saveLocalStorageData = (key, data) => {
   }
 }
 
-// 获取角色列表（从 localStorage 读取，无默认值）
+// 默认管理员角色
+const defaultAdminRole = {
+  id: 1,
+  roleCode: 'ADMIN',
+  roleName: '系统管理员',
+  description: '拥有所有权限',
+  permissions: ['*'],
+  isEnabled: true,
+  createdAt: '2024-01-01 10:00:00'
+}
+
+// 默认管理员用户
+const defaultAdminUser = {
+  id: 1,
+  username: 'admin',
+  realName: '系统管理员',
+  email: 'admin@cc-erp.com',
+  phone: '13800138000',
+  isEnabled: true,
+  roles: [{ id: 1, roleCode: 'ADMIN', roleName: '系统管理员' }],
+  lastLoginTime: null,
+  createdAt: '2024-01-01 10:00:00'
+}
+
+// 获取角色列表
 const getRoles = () => {
   const data = getLocalStorageData(ROLE_STORAGE_KEY)
-  return data || []
+  return data && data.length > 0 ? data : [defaultAdminRole]
 }
 
 const mockRoles = [] // 将从 localStorage 读取
@@ -302,10 +326,10 @@ export const getUserList = (params) => {
   })
 }
 
-// 获取用户列表（从 localStorage，无默认值）
+// 获取用户列表（从 localStorage）
 const getUsers = () => {
   const data = getLocalStorageData(USER_STORAGE_KEY)
-  return data || []
+  return data && data.length > 0 ? data : [defaultAdminUser]
 }
 
 // 创建用户

@@ -7,15 +7,9 @@ export const useUserStore = defineStore('user', () => {
   const token = ref(localStorage.getItem('token') || '')
   const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'))
 
-  // 检查是否为模拟模式
-  const isMockMode = () => {
-    return localStorage.getItem('mockMode') === 'true'
-  }
-
   // 登录
   const login = async (loginForm) => {
-    // 如果已经处于模拟模式，直接使用模拟登录
-    if (isMockMode()) {
+    try {
       const data = await loginApi(loginForm)
       token.value = data.token
       userInfo.value = {
@@ -25,35 +19,25 @@ export const useUserStore = defineStore('user', () => {
       localStorage.setItem('token', data.token)
       localStorage.setItem('userInfo', JSON.stringify(userInfo.value))
       return data
+    } catch (error) {
+      ElMessage.error('登录失败: ' + (error.message || '请检查网络连接'))
+      throw error
     }
-
-    // 正式模式 - 连接后端服务
-    const data = await loginApi(loginForm)
-    token.value = data.token
-    userInfo.value = {
-      userId: data.userId,
-      realName: data.realName
-    }
-    localStorage.setItem('token', data.token)
-    localStorage.setItem('userInfo', JSON.stringify(userInfo.value))
-    return data
   }
 
   // 登出
   const logout = async () => {
-    // 如果是模拟模式，不需要调用登出接口
-    if (!isMockMode()) {
-      try {
-        await logoutApi()
-      } catch (e) {
-        console.warn('登出接口调用失败', e)
-      }
+    try {
+      await logoutApi()
+    } catch (e) {
+      console.warn('登出接口调用失败', e)
     }
     token.value = ''
     userInfo.value = {}
     localStorage.removeItem('token')
     localStorage.removeItem('userInfo')
     localStorage.removeItem('mockMode')
+    localStorage.removeItem('cc_erp_user_permissions')
   }
 
   // 恢复登录状态
@@ -73,7 +57,6 @@ export const useUserStore = defineStore('user', () => {
     userInfo,
     login,
     logout,
-    restoreToken,
-    isMockMode
+    restoreToken
   }
 })

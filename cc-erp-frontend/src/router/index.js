@@ -99,12 +99,6 @@ const routes = [
         meta: { title: '期初开账', icon: 'CircleCheck' }
       },
       {
-        path: 'finance/annual-closing',
-        name: 'AnnualClosing',
-        component: () => import('@/views/finance/AnnualClosing.vue'),
-        meta: { title: '年终关账', icon: 'Lock' }
-      },
-      {
         path: 'report/sales',
         name: 'ReportSales',
         component: () => import('@/views/report/SalesReportPage.vue'),

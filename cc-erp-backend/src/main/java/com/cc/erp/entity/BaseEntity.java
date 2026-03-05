@@ -17,11 +17,6 @@ public abstract class BaseEntity implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 主键ID
-     */
-    private Long id;
-
-    /**
      * 创建人ID
      */
     private Long createdBy;

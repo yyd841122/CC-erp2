@@ -1,6 +1,7 @@
 package com.cc.erp.controller;
 
 import com.cc.erp.dto.LoginRequest;
+import com.cc.erp.security.CustomUserDetails;
 import com.cc.erp.service.AuthService;
 import com.cc.erp.vo.Result;
 import com.cc.erp.vo.TokenResponse;
@@ -47,6 +48,11 @@ public class AuthController {
     public Result<TokenResponse> getCurrentUser() {
         Long userId = authService.getCurrentUserId();
         String username = authService.getCurrentUsername();
-        return Result.success(new TokenResponse(null, userId, username));
+        // 获取用户权限
+        CustomUserDetails userDetails = (CustomUserDetails) org.springframework.security.core.context.SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+        return Result.success(new TokenResponse(null, userId, username, userDetails.getPermissions()));
     }
 }

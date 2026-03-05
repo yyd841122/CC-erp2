@@ -117,12 +117,12 @@ public class PurchaseService {
         // 1. 查询采购单
         PurOrder order = purOrderMapper.findById(id);
         if (order == null) {
-            throw BusinessException.notFound("采购单不存在");
+            throw new BusinessException.notFound("采购单不存在");
         }
 
         // 2. 检查状态
         if (order.getStatus() != 1) {
-            throw BusinessException.badRequest("只有待审核的单据才能审核");
+            throw new BusinessException.badRequest("只有待审核的单据才能审核");
         }
 
         // 3. 更新状态（带乐观锁）
@@ -139,11 +139,10 @@ public class PurchaseService {
         payable.setOrderType("purchase");
         payable.setOrderId(order.getId());
         payable.setOrderNo(order.getOrderNo());
-        // 转换BigDecimal到Long（分）
-        payable.setAmount(order.getFinalAmount().multiply(new java.math.BigDecimal("100")).longValue());
-        payable.setPaidAmount(0L);
-        payable.setBalance(order.getFinalAmount().multiply(new java.math.BigDecimal("100")).longValue());
-        payable.setStatus("unpaid"); // 未结清
+        payable.setAmount(order.getFinalAmount());
+        payable.setPaidAmount(BigDecimal.ZERO);
+        payable.setBalance(order.getFinalAmount());
+        payable.setStatus(0); // 未结清
         payable.setCreatedAt(LocalDateTime.now());
         payable.setUpdatedAt(LocalDateTime.now());
 
@@ -158,7 +157,7 @@ public class PurchaseService {
     public PurchaseOrderDTO getOrderById(Long id) {
         PurOrder order = purOrderMapper.findById(id);
         if (order == null) {
-            throw BusinessException.notFound("采购单不存在");
+            throw new BusinessException.notFound("采购单不存在");
         }
         return convertToDTO(order);
     }

@@ -80,11 +80,11 @@
           style="width: 100%; margin-top: 8px;"
           max-height="300"
         >
-          <el-table-column label="商品" min-width="250">
+          <el-table-column label="商品" min-width="180">
             <template #default="{ row }">
               <el-select
                 v-model="row.productId"
-                placeholder="选择商品（支持模糊搜索）"
+                placeholder="选择商品"
                 filterable
                 size="small"
                 @change="handleProductChange(row)"
@@ -92,18 +92,18 @@
                 <el-option
                   v-for="item in productList"
                   :key="item.id"
-                  :label="item.productCode + ' - ' + item.productName + (item.spec ? ' - ' + item.spec : '')"
+                  :label="item.productCode + ' - ' + item.productName"
                   :value="item.id"
                 >
                   <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="flex: 1;">{{ item.productCode }} - {{ item.productName }}<span v-if="item.spec" style="color: #666; margin-left: 8px;">({{ item.spec }})</span></span>
-                    <span style="color: #999; font-size: 12px; margin-left: 10px;">库存: {{ item.stock }}</span>
+                    <span>{{ item.productCode }} - {{ item.productName }}</span>
+                    <span style="color: #999; font-size: 12px;">库存: {{ item.stock }}</span>
                   </div>
                 </el-option>
               </el-select>
             </template>
           </el-table-column>
-          <el-table-column label="规格" width="100" prop="spec" />
+          <el-table-column label="规格" width="80" prop="spec" />
           <el-table-column label="单位" width="60" prop="unit" />
           <el-table-column label="当前库存" width="90" align="right">
             <template #default="{ row }">
@@ -179,12 +179,6 @@
           <el-descriptions-item label="含税金额:">
             <span class="amount-text amount-primary">¥{{ finalAmount.toFixed(2) }}</span>
           </el-descriptions-item>
-          <el-descriptions-item label="历史累计:">
-            <span class="amount-text">¥{{ previousCumulativeAmount.toFixed(2) }}</span>
-          </el-descriptions-item>
-          <el-descriptions-item label="累计总额:" :span="2">
-            <span class="amount-text amount-success">¥{{ totalCumulativeAmount.toFixed(2) }}</span>
-          </el-descriptions-item>
         </el-descriptions>
       </el-form-item>
 
@@ -213,17 +207,13 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { Plus, Printer } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { useRouter } from 'vue-router'
-import { getInitialStatus } from '@/api/initial'
+import { ElMessage } from 'element-plus'
 
 const props = defineProps({
   modelValue: Boolean
 })
 
 const emit = defineEmits(['update:modelValue', 'refresh'])
-
-const router = useRouter()
 
 const visible = computed({
   get: () => props.modelValue,
@@ -270,44 +260,6 @@ const loadCustomerData = () => {
     console.error('加载客户数据失败:', e)
   }
 }
-
-// 获取客户历史累计金额
-const getCumulativeAmount = (customerId) => {
-  try {
-    const cumulativeData = JSON.parse(localStorage.getItem('cc_erp_cumulative_amounts') || '{}')
-    return cumulativeData.sales?.[customerId] || 0
-  } catch (e) {
-    console.error('获取累计金额失败:', e)
-    return 0
-  }
-}
-
-// 保存客户累计金额
-const saveCumulativeAmount = (customerId, amount) => {
-  try {
-    const cumulativeData = JSON.parse(localStorage.getItem('cc_erp_cumulative_amounts') || '{}')
-    if (!cumulativeData.sales) {
-      cumulativeData.sales = {}
-    }
-    cumulativeData.sales[customerId] = amount
-    localStorage.setItem('cc_erp_cumulative_amounts', JSON.stringify(cumulativeData))
-  } catch (e) {
-    console.error('保存累计金额失败:', e)
-  }
-}
-
-// 历史累计金额
-const previousCumulativeAmount = computed(() => {
-  if (formData.customerId) {
-    return getCumulativeAmount(formData.customerId)
-  }
-  return 0
-})
-
-// 累计总额（历史累计 + 本次金额）
-const totalCumulativeAmount = computed(() => {
-  return previousCumulativeAmount.value + finalAmount.value
-})
 
 // 获取当天日期 YYYY-MM-DD
 const getToday = () => {
@@ -428,180 +380,58 @@ const handleClose = () => {
 
 // 打印销售单
 const handlePrint = () => {
-  // 获取系统设置中的公司信息
-  const systemSettings = JSON.parse(localStorage.getItem('cc_erp_system_settings') || '{}')
-  const companyName = systemSettings.companyName || '广东XXX智能装备有限公司'
-  const contactPhone = systemSettings.contactPhone || ''
-  const contactAddress = systemSettings.contactAddress || ''
-
   // 生成打印内容
   const customer = customerList.value.find(c => c.id === formData.customerId)
-
-  // 数字转中文大写金额
-  const convertToChineseAmount = (num) => {
-    const digits = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖']
-    const units = ['', '拾', '佰', '仟', '万', '拾', '佰', '仟', '亿']
-    const decimal = ['角', '分']
-
-    let str = String(Math.floor(num))
-    let result = ''
-
-    if (num === 0) return '零元整'
-
-    // 处理整数部分
-    for (let i = 0; i < str.length; i++) {
-      const digit = parseInt(str[i])
-      const pos = str.length - i - 1
-      if (digit !== 0) {
-        result += digits[digit] + units[pos]
-      } else if (result[result.length - 1] !== '零' && pos !== 0) {
-        result += digits[0]
-      }
-    }
-
-    result += '元'
-
-    // 处理小数部分
-    const decimals = Math.round((num - Math.floor(num)) * 100)
-    if (decimals > 0) {
-      const j = Math.floor(decimals / 10)
-      const f = decimals % 10
-      if (j > 0) result += digits[j] + '角'
-      if (f > 0) result += digits[f] + '分'
-    } else {
-      result += '整'
-    }
-
-    return result
-  }
-
   const printContent = `
-    <div style="font-family: 'SimSun', serif; padding: 30px 40px; font-size: 14px;">
-      <!-- 头部 -->
-      <div style="text-align: center; margin-bottom: 10px;">
-        <h1 style="font-size: 28px; font-weight: bold; margin: 0; color: #000;">${companyName}</h1>
+    <div style="font-family: 'SimSun', serif; padding: 20px;">
+      <div style="text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px;">
+        销售单
       </div>
-
-      <div style="text-align: center; margin-bottom: 20px;">
-        <h2 style="font-size: 24px; font-weight: bold; margin: 0; padding: 10px 0; border-bottom: 2px solid #000; display: inline-block; min-width: 200px;">送货清单</h2>
+      <div style="margin-bottom: 10px;">
+        <span>客户：${customer?.name || ''}</span>
+        <span style="margin-left: 30px;">销售日期：${formData.orderDate}</span>
+        <span style="margin-left: 30px;">交货日期：${formData.deliveryDate}</span>
       </div>
-
-      <!-- 客户信息 -->
-      <div style="display: flex; justify-content: space-between; margin-bottom: 15px; padding: 10px 0; border-bottom: 1px solid #000;">
-        <div style="font-size: 16px;">
-          <span style="display: inline-block; width: 80px;">客户名称：</span>
-          <span style="font-weight: bold;">${customer?.name || ''}</span>
-        </div>
-        <div style="font-size: 16px;">
-          <span style="display: inline-block; width: 80px;">日&nbsp;&nbsp;&nbsp;&nbsp;期：</span>
-          <span>${formData.orderDate}</span>
-        </div>
-        <div style="font-size: 16px;">
-          <span style="display: inline-block; width: 80px;">单&nbsp;&nbsp;号&nbsp;&nbsp;：</span>
-          <span>No.${String(Date.now()).slice(-8)}</span>
-        </div>
-      </div>
-
-      <!-- 商品明细表 -->
-      <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <table border="1" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse; font-size: 14px;">
         <thead>
-          <tr style="background: #f0f0f0; font-weight: bold;">
-            <th style="width: 50px;">序号</th>
-            <th>产品名称</th>
-            <th style="width: 100px;">规格型号</th>
-            <th style="width: 60px;">单位</th>
-            <th style="width: 80px;">数量</th>
-            <th style="width: 100px;">备注</th>
-            <th style="width: 100px;">单价</th>
-            <th style="width: 120px;">金额</th>
+          <tr style="background: #f5f5f5;">
+            <th>商品名称</th>
+            <th>规格</th>
+            <th>单位</th>
+            <th>数量</th>
+            <th>销售单价</th>
+            <th>税率(%)</th>
+            <th>小计</th>
           </tr>
         </thead>
         <tbody>
-          ${formData.items.map((item, index) => {
+          ${formData.items.map(item => {
             const product = productList.value.find(p => p.id === item.productId)
             const subtotal = (item.quantity || 0) * (item.price || 0)
             return `
-              <tr style="height: 40px;">
-                <td style="text-align: center;">${index + 1}</td>
+              <tr>
                 <td>${product?.productName || ''}</td>
-                <td>${product?.spec || item.spec || ''}</td>
-                <td style="text-align: center;">${item.unit || ''}</td>
-                <td style="text-align: center;">${item.quantity || 0}</td>
-                <td></td>
-                <td style="text-align: right; padding-right: 10px;">${(item.price || 0).toFixed(2)}</td>
-                <td style="text-align: right; padding-right: 10px;">${subtotal.toFixed(2)}</td>
+                <td>${item.spec || ''}</td>
+                <td>${item.unit || ''}</td>
+                <td>${item.quantity || 0}</td>
+                <td>¥${(item.price || 0).toFixed(2)}</td>
+                <td>${item.taxRate || 0}%</td>
+                <td>¥${subtotal.toFixed(2)}</td>
               </tr>
             `
           }).join('')}
-          ${formData.items.length < 8 ? Array(8 - formData.items.length).fill(0).map(() => `
-            <tr style="height: 40px;">
-              <td style="text-align: center;">&nbsp;</td>
-              <td></td>
-              <td></td>
-              <td style="text-align: center;"></td>
-              <td style="text-align: center;"></td>
-              <td></td>
-              <td style="text-align: right; padding-right: 10px;"></td>
-              <td style="text-align: right; padding-right: 10px;"></td>
-            </tr>
-          `).join('') : ''}
         </tbody>
       </table>
-
-      <!-- 合计信息 -->
-      <div style="margin-bottom: 20px;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="width: 150px; font-size: 16px; padding: 5px 0;">
-              <strong>合&nbsp;&nbsp;计：</strong>
-            </td>
-            <td style="font-size: 16px;">
-              <span style="color: #000;">¥${finalAmount.value.toFixed(2)}</span>
-              <span style="margin-left: 30px;">（${convertToChineseAmount(finalAmount.value)}）</span>
-            </td>
-          </tr>
-        </table>
+      <div style="margin-top: 20px;">
+        <p>销售金额：¥${totalAmount.value.toFixed(2)}</p>
+        <p>税额：¥${totalTax.value.toFixed(2)}</p>
+        <p style="font-size: 16px; font-weight: bold;">含税金额：¥${finalAmount.value.toFixed(2)}</p>
+        <p style="margin-top: 10px;">备注：${formData.remark || '无'}</p>
       </div>
-
-      <!-- 备注信息 -->
-      <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #999; background: #fafafa;">
-        <div style="margin-bottom: 5px;">
-          <strong>备&nbsp;&nbsp;&nbsp;注：</strong>${formData.remark || '收货后如有异常请于7天内通知，否则我公司不予受理，谢谢理解！'}
-        </div>
-      </div>
-
-      <!-- 签字区域 -->
-      <div style="margin-bottom: 20px;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="width: 150px; padding: 8px 0;">
-              <strong>制&nbsp;单&nbsp;人：</strong>
-              <span style="display: inline-block; width: 100px; border-bottom: 1px solid #000;"></span>
-            </td>
-            <td style="width: 150px;">
-              <strong>仓&nbsp;管&nbsp;员：</strong>
-              <span style="display: inline-block; width: 100px; border-bottom: 1px solid #000;"></span>
-            </td>
-            <td style="width: 150px;">
-              <strong>客&nbsp;户：</strong>
-              <span style="display: inline-block; width: 100px; border-bottom: 1px solid #000;"></span>
-            </td>
-            <td></td>
-          </tr>
-        </table>
-      </div>
-
-      <!-- 底部信息 -->
-      <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666; border-top: 1px solid #ccc; padding-top: 10px;">
-        <div>
-          ${contactAddress ? `地址：${contactAddress}` : ''}
-        </div>
-        <div>
-          ${contactPhone ? `电话：${contactPhone}` : ''}
-        </div>
-        <div>
-          日期：${getToday()}
-        </div>
+      <div style="margin-top: 30px; display: flex; justify-content: space-between;">
+        <span>制单人：__________</span>
+        <span>审核人：__________</span>
+        <span>日期：${getToday()}</span>
       </div>
     </div>
   `
@@ -611,24 +441,11 @@ const handlePrint = () => {
   printWindow.document.write(`
     <html>
       <head>
-        <meta charset="utf-8">
-        <title>送货清单</title>
+        <title>销售单打印</title>
         <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body {
-            margin: 0;
-            padding: 0;
-            font-family: SimSun, serif;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
+          body { margin: 0; padding: 0; }
           @media print {
             body { margin: 0; }
-            table { page-break-inside: avoid; }
-          }
-          @page {
-            size: A4;
-            margin: 10mm;
           }
         </style>
       </head>
@@ -646,34 +463,8 @@ onMounted(() => {
 })
 
 // 监听对话框打开，刷新数据
-watch(() => props.modelValue, async (newVal) => {
+watch(() => props.modelValue, (newVal) => {
   if (newVal) {
-    // 检查是否已开账
-    try {
-      const status = await getInitialStatus()
-      if (!status.isOpened) {
-        await ElMessageBox.alert(
-          '系统尚未开账，请先完成期初开账后再进行业务操作。\n\n是否立即前往期初开账页面？',
-          '系统未开账',
-          {
-            confirmButtonText: '前往开账',
-            cancelButtonText: '取消',
-            type: 'warning',
-            showCancelButton: true,
-            distinguishCancelAndClose: true
-          }
-        ).then(() => {
-          router.push('/finance/initial-balance')
-        }).catch(() => {
-          // 用户点击取消
-        })
-        emit('update:modelValue', false)
-        return
-      }
-    } catch (error) {
-      console.error('检查开账状态失败:', error)
-    }
-
     loadProductData()
     loadCustomerData()
   }
@@ -705,9 +496,6 @@ const handleSubmit = async () => {
       remark: formData.remark
     }
 
-    // 保存累计金额
-    saveCumulativeAmount(formData.customerId, totalCumulativeAmount.value)
-
     // TODO: 调用创建销售单接口
     console.log('提交数据:', data)
 
@@ -735,11 +523,5 @@ const handleSubmit = async () => {
   font-size: 16px;
   font-weight: 600;
   color: #1890FF;
-}
-
-.amount-success {
-  font-size: 16px;
-  font-weight: 600;
-  color: #52C41A;
 }
 </style>

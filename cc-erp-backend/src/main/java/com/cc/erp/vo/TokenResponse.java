@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * Token 响应
  *
@@ -28,4 +30,9 @@ public class TokenResponse {
      * 用户姓名
      */
     private String realName;
+
+    /**
+     * 用户权限列表
+     */
+    private List<String> permissions;
 }

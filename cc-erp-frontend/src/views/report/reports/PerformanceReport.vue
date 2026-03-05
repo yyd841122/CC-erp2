@@ -248,7 +248,7 @@ const initBarChart = () => {
       {
         name: '销售金额',
         type: 'bar',
-        data: [],
+        data: []
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
             { offset: 0, color: '#1890FF' },

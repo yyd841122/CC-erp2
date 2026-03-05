@@ -314,33 +314,14 @@ const handleFileChange = async (event) => {
       }
     )
 
-    // 获取现有数据用于查重
-    const existingData = await getCustomerList({ page: 1, size: 10000 })
-    const existingCustomers = existingData.records || existingData || []
-
     let successCount = 0
-    let skipCount = 0
     let errorCount = 0
 
     for (const row of data) {
       try {
-        const customerCode = row['客户编码'] || ''
-        const customerName = row['客户名称']
-
-        // 检查是否已存在（按客户编码或客户名称）
-        const exists = existingCustomers.some(c =>
-          (customerCode && c.customerCode === customerCode) ||
-          c.customerName === customerName
-        )
-
-        if (exists) {
-          skipCount++
-          continue
-        }
-
         const customerData = {
-          customerCode: customerCode,
-          customerName: customerName,
+          customerCode: row['客户编码'] || '',
+          customerName: row['客户名称'],
           phone: row['联系电话'] || '',
           address: row['地址'] || '',
           logisticsInfo: row['物流信息'] || '',
@@ -357,11 +338,7 @@ const handleFileChange = async (event) => {
       }
     }
 
-    ElMessage.success(`导入完成：成功 ${successCount} 条，跳过 ${skipCount} 条（重复），失败 ${errorCount} 条`)
-    // 清空搜索条件并重新加载
-    searchForm.customerName = ''
-    searchForm.isEnabled = ''
-    pagination.page = 1
+    ElMessage.success(`导入完成：成功 ${successCount} 条，失败 ${errorCount} 条`)
     loadData()
   } catch (error) {
     console.error('导入失败:', error)

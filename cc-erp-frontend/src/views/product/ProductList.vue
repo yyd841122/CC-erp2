@@ -418,12 +418,7 @@ const handleFileChange = async (event) => {
       }
     )
 
-    // 获取现有数据用于查重
-    const existingData = await getProductList({ page: 1, size: 10000 })
-    const existingProducts = existingData.records || existingData || []
-
     let successCount = 0
-    let skipCount = 0
     let errorCount = 0
 
     for (const row of data) {
@@ -436,26 +431,11 @@ const handleFileChange = async (event) => {
           continue
         }
 
-        const productCode = row['商品编码'] || ''
-        const productName = row['商品名称']
-
-        // 检查是否已存在（按商品编码或商品名称+规格组合）
-        const spec = row['规格'] || ''
-        const exists = existingProducts.some(p =>
-          (productCode && p.productCode === productCode) ||
-          (p.productName === productName && p.spec === spec)
-        )
-
-        if (exists) {
-          skipCount++
-          continue
-        }
-
         const productData = {
-          productCode: productCode,
-          productName: productName,
+          productCode: row['商品编码'] || '',
+          productName: row['商品名称'],
           categoryId: category.id,
-          spec: spec,
+          spec: row['规格'] || '',
           unit: row['单位'] || '套',
           costPrice: row['成本价'] ? Math.round(parseFloat(row['成本价']) * 100) : 0,
           salePrice: row['销售价'] ? Math.round(parseFloat(row['销售价']) * 100) : 0,
@@ -473,12 +453,7 @@ const handleFileChange = async (event) => {
       }
     }
 
-    ElMessage.success(`导入完成：成功 ${successCount} 条，跳过 ${skipCount} 条（重复），失败 ${errorCount} 条`)
-    // 清空搜索条件并重新加载
-    searchForm.productName = ''
-    searchForm.categoryId = ''
-    searchForm.isEnabled = ''
-    pagination.page = 1
+    ElMessage.success(`导入完成：成功 ${successCount} 条，失败 ${errorCount} 条`)
     updateCategoryCount()  // 更新分类的商品数量
     loadData()
   } catch (error) {

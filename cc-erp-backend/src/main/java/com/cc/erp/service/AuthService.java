@@ -48,7 +48,7 @@ public class AuthService {
 
         log.info("用户登录成功: {}", userDetails.getUsername());
 
-        return new TokenResponse(token, userDetails.getUserId(), userDetails.getRealName());
+        return new TokenResponse(token, userDetails.getUserId(), userDetails.getRealName(), userDetails.getPermissions());
     }
 
     /**

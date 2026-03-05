@@ -7,6 +7,18 @@
       </div>
 
       <div class="header-right">
+        <!-- 测试数据管理按钮 -->
+        <el-button
+          v-if="isTestMode"
+          type="warning"
+          size="small"
+          plain
+          @click="openTestDataManager"
+        >
+          <el-icon><DataAnalysis /></el-icon>
+          测试数据
+        </el-button>
+
         <el-icon class="header-icon" :size="20">
           <Bell />
         </el-icon>
@@ -97,10 +109,6 @@
               <el-icon><CircleCheck /></el-icon>
               <template #title>期初开账</template>
             </el-menu-item>
-            <el-menu-item index="/finance/annual-closing">
-              <el-icon><Lock /></el-icon>
-              <template #title>年终关账</template>
-            </el-menu-item>
             <el-menu-item index="/finance/receivable">
               <el-icon><Document /></el-icon>
               <template #title>应收账款</template>
@@ -187,6 +195,9 @@
           </transition>
         </router-view>
       </el-main>
+
+      <!-- 测试数据管理 -->
+      <TestDataManager v-model="testDataVisible" />
     </el-container>
   </div>
 </template>
@@ -204,6 +215,7 @@ import {
   OfficeBuilding,
   Money,
   Coin,
+  DataAnalysis,
   TrendCharts,
   Wallet,
   Trophy,
@@ -222,6 +234,7 @@ import {
   WalletFilled
 } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
+import TestDataManager from '@/components/TestDataManager.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -230,6 +243,18 @@ const userStore = useUserStore()
 const isCollapse = ref(false)
 const activeMenu = computed(() => route.path)
 const userInfo = computed(() => userStore.userInfo)
+
+// 测试数据管理
+const testDataVisible = ref(false)
+const isTestMode = computed(() => {
+  return localStorage.getItem('mockMode') === 'true'
+})
+
+// 打开测试数据管理对话框
+const openTestDataManager = () => {
+  console.log('Opening test data manager, mockMode:', localStorage.getItem('mockMode'))
+  testDataVisible.value = true
+}
 
 const handleCommand = () => {
   // 可以添加其他下拉菜单命令处理
