@@ -85,30 +85,49 @@
 
     <!-- 表格区域 -->
     <el-card class="table-card" shadow="never">
+      <!-- 批量操作工具栏 -->
+      <div v-if="selectedRows.length > 0" class="batch-toolbar">
+        <span class="selected-info">已选择 <strong>{{ selectedRows.length }}</strong> 项</span>
+        <div class="batch-actions">
+          <el-button type="danger" :icon="Delete" @click="handleBatchDelete">
+            批量删除
+          </el-button>
+          <el-button type="primary" :icon="Edit" @click="showBatchCategoryDialog">
+            批量更改分类
+          </el-button>
+          <el-button @click="handleClearSelection">
+            取消选择
+          </el-button>
+        </div>
+      </div>
+
       <el-table
+        ref="tableRef"
         :data="tableData"
         stripe
         v-loading="loading"
         style="width: 100%"
+        @selection-change="handleSelectionChange"
+        @sort-change="handleSortChange"
       >
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="productCode" label="商品编码" width="120" />
-        <el-table-column prop="productName" label="商品名称" min-width="150" />
-        <el-table-column prop="categoryName" label="分类" width="100" />
-        <el-table-column prop="spec" label="规格" width="100" />
-        <el-table-column prop="unit" label="单位" width="60" />
-        <el-table-column prop="costPrice" label="成本价" width="100" align="right">
+        <el-table-column prop="productCode" label="商品编码" min-width="100" sortable />
+        <el-table-column prop="productName" label="商品名称" min-width="150" show-overflow-tooltip sortable />
+        <el-table-column prop="categoryName" label="分类" min-width="100" sortable />
+        <el-table-column prop="spec" label="规格" min-width="80" sortable />
+        <el-table-column prop="unit" label="单位" min-width="60" />
+        <el-table-column prop="costPrice" label="成本价" min-width="90" align="right">
           <template #default="{ row }">
             ¥{{ (row.costPrice / 100).toFixed(2) || '0.00' }}
           </template>
         </el-table-column>
-        <el-table-column prop="salePrice" label="销售价" width="100" align="right">
+        <el-table-column prop="salePrice" label="销售价" min-width="90" align="right">
           <template #default="{ row }">
             ¥{{ (row.salePrice / 100).toFixed(2) || '0.00' }}
           </template>
         </el-table-column>
-        <el-table-column prop="minStock" label="最低库存" width="90" align="center" />
-        <el-table-column prop="isEnabled" label="状态" width="80" align="center">
+        <el-table-column prop="minStock" label="最低库存" min-width="80" align="center" />
+        <el-table-column prop="isEnabled" label="状态" min-width="70" align="center">
           <template #default="{ row }">
             <el-tag :type="row.isEnabled ? 'success' : 'info'" size="small">
               {{ row.isEnabled ? '启用' : '禁用' }}
@@ -155,14 +174,64 @@
       @refresh="handleCategoryRefresh"
       ref="categoryDialogRef"
     />
+
+    <!-- 批量更改分类对话框 -->
+    <el-dialog
+      v-model="batchCategoryDialogVisible"
+      title="批量更改分类"
+      width="500px"
+      :close-on-click-modal="false"
+    >
+      <el-form label-width="100px">
+        <el-form-item label="选中商品">
+          <span class="selected-count">{{ selectedRows.length }} 个商品</span>
+        </el-form-item>
+        <el-form-item label="新分类">
+          <el-select
+            v-model="batchCategoryId"
+            placeholder="请选择新分类"
+            style="width: 100%;"
+          >
+            <el-option
+              v-for="category in categories"
+              :key="category.id"
+              :label="category.categoryName"
+              :value="category.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="商品列表">
+          <div class="product-preview">
+            <el-tag
+              v-for="item in selectedRows.slice(0, 5)"
+              :key="item.id"
+              size="small"
+              style="margin: 4px;"
+            >
+              {{ item.productName }}
+            </el-tag>
+            <span v-if="selectedRows.length > 5" class="more-hint">
+              等 {{ selectedRows.length }} 个商品
+            </span>
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="batchCategoryDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="batchUpdating" @click="handleBatchUpdateCategory">
+          确定
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { Plus, Refresh, FolderOpened, Download, ArrowDown, Upload } from '@element-plus/icons-vue'
+import { Plus, Refresh, FolderOpened, Download, ArrowDown, Delete, Edit } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getProductList, deleteProduct, createProduct } from '@/api/product'
+import { getProductList, deleteProduct, createProduct, updateProduct } from '@/api/product'
+import { getCategoryList } from '@/api/productCategory'
 import { exportToExcel, importFromExcel, downloadTemplate } from '@/utils/excel'
 import ProductDialog from './ProductDialog.vue'
 import CategoryDialog from './CategoryDialog.vue'
@@ -180,22 +249,22 @@ const categoryDialogVisible = ref(false)
 const currentRow = ref(null)
 const categoryDialogRef = ref()
 const fileInputRef = ref()
+const tableRef = ref()
+
+// 批量操作相关
+const selectedRows = ref([])
+const batchCategoryDialogVisible = ref(false)
+const batchCategoryId = ref(null)
+const batchUpdating = ref(false)
 
 // 分类列表
 const categories = ref([])
 
-// localStorage 存储键
-const CATEGORIES_STORAGE_KEY = 'cc_erp_categories'
-
 // 加载分类数据
-const loadCategories = () => {
+const loadCategories = async () => {
   try {
-    const saved = localStorage.getItem(CATEGORIES_STORAGE_KEY)
-    if (saved) {
-      categories.value = JSON.parse(saved)
-    } else {
-      categories.value = []
-    }
+    const data = await getCategoryList()
+    categories.value = data || []
   } catch (e) {
     console.error('加载分类失败:', e)
   }
@@ -219,8 +288,6 @@ const loadData = async () => {
     const data = await getProductList(params)
     tableData.value = data.records || data
     pagination.total = data.total || 0
-    // 同时更新分类的商品数量
-    updateCategoryCount()
   } catch (error) {
     console.error('加载数据失败:', error)
   } finally {
@@ -271,49 +338,161 @@ const handleDelete = async (row) => {
 
     await deleteProduct(row.id)
     ElMessage.success('删除成功')
-
-    // 更新分类的商品数量
-    updateCategoryCount()
     loadData()
   } catch (error) {
     // 用户取消或接口失败
   }
 }
 
+// 表格选择变化
+const handleSelectionChange = (selection) => {
+  selectedRows.value = selection
+}
+const handleSortChange = ({ prop, order }) => {
+  if (!order) {
+    // 无排序，恢复原始顺序
+    loadData()
+    return
+  }
+
+  tableData.value.sort((a, b) => {
+    let aVal = a[prop]
+    let bVal = b[prop]
+
+    // 处理空值
+    if (aVal === null || aVal === undefined) aVal = ''
+    if (bVal === null || bVal === undefined) bVal = ''
+
+    // 数字类型比较
+    if (prop === 'costPrice' || prop === 'salePrice' || prop === 'minStock') {
+      aVal = Number(aVal) || 0
+      bVal = Number(bVal) || 0
+    }
+
+    if (order === 'ascending') {
+      return aVal > bVal ? 1 : aVal < bVal ? -1 : 0
+    } else {
+      return aVal < bVal ? 1 : aVal > bVal ? -1 : 0
+    }
+  })
+}
+// 清空选择
+const handleClearSelection = () => {
+  tableRef.value?.clearSelection()
+  selectedRows.value = []
+}
+
+// 批量删除
+const handleBatchDelete = async () => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedRows.value.length} 个商品吗？此操作不可恢复！`,
+      '批量删除确认',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    loading.value = true
+    let successCount = 0
+    let errorCount = 0
+
+    for (const row of selectedRows.value) {
+      try {
+        await deleteProduct(row.id)
+        successCount++
+      } catch (err) {
+        console.error('删除失败:', row, err)
+        errorCount++
+      }
+    }
+
+    handleClearSelection()
+
+    if (errorCount === 0) {
+      ElMessage.success(`成功删除 ${successCount} 个商品`)
+    } else {
+      ElMessage.warning(`删除完成：成功 ${successCount} 个，失败 ${errorCount} 个`)
+    }
+
+    loadData()
+  } catch (error) {
+    // 用户取消
+  } finally {
+    loading.value = false
+  }
+}
+
+// 显示批量更改分类对话框
+const showBatchCategoryDialog = () => {
+  batchCategoryId.value = null
+  batchCategoryDialogVisible.value = true
+}
+
+// 批量更改分类
+const handleBatchUpdateCategory = async () => {
+  if (!batchCategoryId.value) {
+    ElMessage.warning('请选择新分类')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要将选中的 ${selectedRows.value.length} 个商品更改为新分类吗？`,
+      '批量更改分类确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    batchUpdating.value = true
+    const category = categories.value.find(c => c.id === batchCategoryId.value)
+    let successCount = 0
+    let errorCount = 0
+
+    for (const row of selectedRows.value) {
+      try {
+        await updateProduct(row.id, {
+          ...row,
+          categoryId: category.id,
+          categoryName: category.categoryName
+        })
+        successCount++
+      } catch (err) {
+        console.error('更新失败:', row, err)
+        errorCount++
+      }
+    }
+
+    batchCategoryDialogVisible.value = false
+    handleClearSelection()
+
+    if (errorCount === 0) {
+      ElMessage.success(`成功更新 ${successCount} 个商品`)
+    } else {
+      ElMessage.warning(`更新完成：成功 ${successCount} 个，失败 ${errorCount} 个`)
+    }
+
+    loadData()
+  } catch (error) {
+    // 用户取消
+  } finally {
+    batchUpdating.value = false
+  }
+}
+
 // 分类管理
 const handleCategoryManage = () => {
   categoryDialogVisible.value = true
-  // 打开分类管理时更新商品数量
-  if (categoryDialogRef.value) {
-    categoryDialogRef.value.updateCategoryProductCount()
-  }
 }
 
 // 分类刷新
 const handleCategoryRefresh = () => {
   loadCategories()
-  // 同时更新分类中的商品数量
-  if (categoryDialogRef.value) {
-    categoryDialogRef.value.updateCategoryProductCount()
-  }
-}
-
-// 更新分类的商品数量
-const updateCategoryCount = () => {
-  try {
-    const productsData = localStorage.getItem('cc_erp_test_products')
-    const products = productsData ? JSON.parse(productsData) : []
-
-    categories.value.forEach(category => {
-      const count = products.filter(p => p.categoryId === category.id).length
-      category.productCount = count
-    })
-
-    // 保存更新后的分类数据
-    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories.value))
-  } catch (e) {
-    console.error('更新分类数量失败:', e)
-  }
 }
 
 // 分页
@@ -419,7 +598,12 @@ const handleFileChange = async (event) => {
     )
 
     let successCount = 0
+    let skipCount = 0
     let errorCount = 0
+
+    // 获取所有商品用于去重检查
+    const allProducts = await getProductList({ page: 1, size: 10000 })
+    const allProductList = allProducts.records || allProducts
 
     for (const row of data) {
       try {
@@ -435,6 +619,7 @@ const handleFileChange = async (event) => {
           productCode: row['商品编码'] || '',
           productName: row['商品名称'],
           categoryId: category.id,
+          categoryName: category.categoryName,
           spec: row['规格'] || '',
           unit: row['单位'] || '套',
           costPrice: row['成本价'] ? Math.round(parseFloat(row['成本价']) * 100) : 0,
@@ -445,6 +630,18 @@ const handleFileChange = async (event) => {
           remark: row['备注'] || ''
         }
 
+        // 检查是否已存在相同商品（商品名称+分类+规格三者相同视为重复）
+        const existingProduct = allProductList.find(p =>
+          p.productName === productData.productName &&
+          p.categoryId === productData.categoryId &&
+          p.spec === productData.spec
+        )
+        if (existingProduct) {
+          console.log('跳过重复商品:', productData.productName)
+          skipCount++
+          continue
+        }
+
         await createProduct(productData)
         successCount++
       } catch (err) {
@@ -453,8 +650,7 @@ const handleFileChange = async (event) => {
       }
     }
 
-    ElMessage.success(`导入完成：成功 ${successCount} 条，失败 ${errorCount} 条`)
-    updateCategoryCount()  // 更新分类的商品数量
+    ElMessage.success(`导入完成：成功 ${successCount} 条，跳过 ${skipCount} 条重复数据，失败 ${errorCount} 条`)
     loadData()
   } catch (error) {
     console.error('导入失败:', error)
@@ -474,7 +670,6 @@ const handleDownloadTemplate = () => {
 // 初始化加载
 onMounted(() => {
   loadCategories()
-  updateCategoryCount()  // 更新分类中的实际商品数量
   loadData()
 })
 </script>
@@ -529,9 +724,53 @@ onMounted(() => {
   }
 }
 
+.batch-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #e6f7ff;
+  border-bottom: 1px solid #d9d9d9;
+
+  .selected-info {
+    font-size: 14px;
+    color: #595959;
+
+    strong {
+      color: #1890ff;
+      font-size: 16px;
+    }
+  }
+
+  .batch-actions {
+    display: flex;
+    gap: 8px;
+  }
+}
+
 .pagination-container {
   display: flex;
   justify-content: flex-end;
   padding: 16px;
+}
+
+.selected-count {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1890ff;
+}
+
+.product-preview {
+  max-height: 100px;
+  overflow-y: auto;
+  padding: 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.more-hint {
+  font-size: 12px;
+  color: #999;
+  margin-left: 8px;
 }
 </style>

@@ -85,36 +85,72 @@ export const importFromExcel = (file) => {
  * @param {String} fileName - 模板文件名
  */
 export const downloadTemplate = (columns, fileName = '导入模板.xlsx') => {
-  // 创建示例数据
-  const exampleData = [{}]
-  columns.forEach(col => {
-    exampleData[0][col.label] = col.required ? `示例${col.label}` : ''
-  })
-
-  // 添加说明行
-  const instructions = columns.map(col => {
-    const req = col.required ? ' (必填)' : ' (选填)'
-    return `${col.label}${req}`
-  })
+  // 创建工作表数据（使用数组数组格式，更可控）
+  const data = [
+    columns.map(col => col.label), // 第一行：列标题
+    columns.map(col => {
+      // 第二行：示例数据（必填字段有示例，可选字段留空）
+      if (col.required) {
+        return getExampleValue(col.label)
+      }
+      return ''
+    })
+  ]
 
   // 创建工作表
-  const worksheet = XLSX.utils.json_to_sheet(exampleData)
-
-  // 在顶部添加说明
-  XLSX.utils.sheet_add_aoa(worksheet, [['导入说明：']], { origin: 'A1' })
-  XLSX.utils.sheet_add_aoa(worksheet, [instructions], { origin: 'A2' })
-  XLSX.utils.sheet_add_aoa(worksheet, [['']], { origin: 'A3' })
+  const worksheet = XLSX.utils.aoa_to_sheet(data)
 
   // 设置列宽
-  const colWidths = columns.map(col => ({
-    wch: Math.max(col.label.length, 15)
+  worksheet['!cols'] = columns.map(col => ({
+    wch: Math.max(col.label.length + 4, 15)
   }))
-  worksheet['!cols'] = colWidths
 
   // 创建工作簿
   const workbook = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(workbook, worksheet, '导入模板')
+  XLSX.utils.book_append_sheet(workbook, worksheet, '导入数据')
+
+  // 添加说明工作表
+  const instructions = [
+    ['导入说明'],
+    [''],
+    ['必填字段：'],
+    ...columns.filter(c => c.required).map(c => [`- ${c.label}`]),
+    [''],
+    ['可选字段：'],
+    ...columns.filter(c => !c.required).map(c => [`- ${c.label}`]),
+    [''],
+    ['注意事项：'],
+    ['1. 请勿修改第一行列标题'],
+    ['2. 必填字段不能为空'],
+    ['3. 删除示例行（第二行），添加您的数据'],
+    ['4. 分类名称必须是系统中已存在的分类'],
+    ['5. 价格格式：100.00 表示100元'],
+    ['6. 启用状态填写：启用 或 禁用']
+  ]
+  const instructionSheet = XLSX.utils.aoa_to_sheet(instructions)
+  instructionSheet['!cols'] = [{ wch: 35 }]
+  XLSX.utils.book_append_sheet(workbook, instructionSheet, '说明')
 
   // 下载文件
   XLSX.writeFile(workbook, fileName)
+}
+
+/**
+ * 根据列标签生成示例值
+ */
+function getExampleValue(label) {
+  const examples = {
+    '商品编码': 'P00001',
+    '商品名称': '示例商品名称',
+    '分类名称': '办公用品',
+    '规格': '标准规格',
+    '单位': '套',
+    '成本价': '100.00',
+    '销售价': '150.00',
+    '最低库存': '10',
+    '最高库存': '1000',
+    '启用状态': '启用',
+    '备注': '这是备注信息'
+  }
+  return examples[label] || `示例${label}`
 }
